@@ -1,7 +1,27 @@
 package main
 
+import (
+	"fmt"
+
+	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
+	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
+	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/parser"
+)
+
 type TypescriptApiParser struct {
 }
 
-func (t *TypescriptApiParser) Parse(sourceFile string) (Api, error) {
+func (t *TypescriptApiParser) Parse(sourceFilePath string) (Api, error) {
+	sourceFile := parser.ParseSourceFile(ast.SourceFileParseOptions{
+		FileName:                       sourceFilePath,
+		Path:                           "",
+		CompilerOptions:                core.SourceFileAffectingCompilerOptions{},
+		ExternalModuleIndicatorOptions: ast.ExternalModuleIndicatorOptions{},
+		JSDocParsingMode:               ast.JSDocParsingModeParseAll,
+	}, "", core.ScriptKindTS)
+	_ = sourceFile
+
+	fmt.Println("kek")
+
+	return Api{}, nil
 }

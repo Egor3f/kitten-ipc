@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 type ProgLang string
@@ -45,16 +46,25 @@ func main() {
 		log.Panic("source and destination must be set")
 	}
 
-	if err := checkIsFile(Src); err != nil {
-		log.Panic(err)
-	}
-
-	apiParser, err := apiParserByExt(Src)
+	srcAbs, err := filepath.Abs(Src)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	_, err = apiParser.Parse(Src)
+	//Dest, err = filepath.Abs(Dest)
+	//if err != nil {
+	//}
+
+	if err := checkIsFile(srcAbs); err != nil {
+		log.Panic(err)
+	}
+
+	apiParser, err := apiParserByExt(srcAbs)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	_, err = apiParser.Parse(srcAbs)
 	if err != nil {
 		log.Panic(err)
 	}
