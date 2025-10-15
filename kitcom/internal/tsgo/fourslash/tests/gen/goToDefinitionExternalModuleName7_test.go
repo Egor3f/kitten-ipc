@@ -1,0 +1,22 @@
+package fourslash_test
+
+import (
+	"testing"
+
+	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/fourslash"
+	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/testutil"
+)
+
+func TestGoToDefinitionExternalModuleName7(t *testing.T) {
+	t.Parallel()
+
+	defer testutil.RecoverAndFail(t, "Panic on fourslash test")
+	const content = `// @Filename: b.ts
+import {Foo, Bar} from [|'e/*1*/'|];
+// @Filename: a.ts
+declare module /*2*/"e" {
+    class Foo { }
+}`
+	f := fourslash.NewFourslash(t, nil /*capabilities*/, content)
+	f.VerifyBaselineGoToDefinition(t, "1")
+}
