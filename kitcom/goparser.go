@@ -17,10 +17,11 @@ type apiStruct struct {
 }
 
 type GoApiParser struct {
-	apiStructs []*apiStruct
 }
 
 func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
+
+	var apiStructs []*apiStruct
 
 	fileSet := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileSet, sourceFile, nil, parser.ParseComments|parser.SkipObjectResolution)
@@ -57,14 +58,13 @@ func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
 		}
 		_ = structType
 
-		g.apiStructs = append(g.apiStructs, &apiStruct{
+		apiStructs = append(apiStructs, &apiStruct{
 			name:    typeSpec.Name.Name,
 			pkgName: pkgName,
 		})
 	}
 
-	if len(g.apiStructs) == 0 {
-		// todo support arbitrary order of input files
+	if len(apiStructs) == 0 {
 		return Api{}, fmt.Errorf("no api struct found")
 	}
 
@@ -95,7 +95,7 @@ func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
 			continue
 		}
 
-		for _, apiStrct := range g.apiStructs {
+		for _, apiStrct := range apiStructs {
 			if recvIdent.Name == apiStrct.name && pkgName == apiStrct.pkgName {
 				apiStrct.methods = append(apiStrct.methods, funcDecl)
 			}
