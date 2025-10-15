@@ -21,7 +21,14 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (Api, error) {
 	}, "", core.ScriptKindTS)
 	_ = sourceFile
 
-	fmt.Println("kek")
+	sourceFile.ForEachChild(func(node *ast.Node) bool {
+		if node.IsJSDoc() {
+			jsDoc := node.AsJSDoc()
+			_ = jsDoc
+			fmt.Println("a")
+		}
+		return false
+	})
 
 	return Api{}, nil
 }
