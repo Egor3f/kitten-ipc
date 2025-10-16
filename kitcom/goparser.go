@@ -68,6 +68,10 @@ func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
 		return Api{}, fmt.Errorf("no api struct found")
 	}
 
+	if len(apiStructs) > 1 {
+		return Api{}, fmt.Errorf("multiple api struct found")
+	}
+
 	for _, decl := range astFile.Decls {
 		funcDecl, ok := decl.(*ast.FuncDecl)
 		if !ok {
