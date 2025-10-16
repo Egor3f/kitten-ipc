@@ -27,7 +27,17 @@ func parseFlags() {
 	flag.Parse()
 }
 
+type Method struct {
+	Name string
+}
+
+type Endpoint struct {
+	Name    string
+	Methods []Method
+}
+
 type Api struct {
+	Endpoints []Endpoint
 }
 
 type ApiParser interface {
