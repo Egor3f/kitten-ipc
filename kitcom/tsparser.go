@@ -21,17 +21,17 @@ type TypescriptApiParser struct {
 type apiClass struct {
 }
 
-func (t *TypescriptApiParser) Parse(sourceFilePath string) (Api, error) {
+func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 
 	f, err := os.Open(sourceFilePath)
 	if err != nil {
-		return Api{}, fmt.Errorf("failed to open file: %w", err)
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	defer f.Close()
 
 	fileContents, err := io.ReadAll(f)
 	if err != nil {
-		return Api{}, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
 	sourceFile := parser.ParseSourceFile(ast.SourceFileParseOptions{
@@ -74,12 +74,12 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (Api, error) {
 	})
 
 	if len(apiClasses) == 0 {
-		return Api{}, fmt.Errorf("no api class found")
+		return nil, fmt.Errorf("no api class found")
 	}
 
 	if len(apiClasses) > 1 {
-		return Api{}, fmt.Errorf("multiple api classes found")
+		return nil, fmt.Errorf("multiple api classes found")
 	}
 
-	return Api{}, nil
+	return nil, nil
 }

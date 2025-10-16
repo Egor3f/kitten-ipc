@@ -19,14 +19,14 @@ type apiStruct struct {
 type GoApiParser struct {
 }
 
-func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
+func (g *GoApiParser) Parse(sourceFile string) (*Api, error) {
 
 	var apiStructs []*apiStruct
 
 	fileSet := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileSet, sourceFile, nil, parser.ParseComments|parser.SkipObjectResolution)
 	if err != nil {
-		return Api{}, fmt.Errorf("parse file: %w", err)
+		return nil, fmt.Errorf("parse file: %w", err)
 	}
 
 	pkgName := astFile.Name.Name
@@ -65,11 +65,11 @@ func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
 	}
 
 	if len(apiStructs) == 0 {
-		return Api{}, fmt.Errorf("no api struct found")
+		return nil, fmt.Errorf("no api struct found")
 	}
 
 	if len(apiStructs) > 1 {
-		return Api{}, fmt.Errorf("multiple api struct found")
+		return nil, fmt.Errorf("multiple api struct found")
 	}
 
 	for _, decl := range astFile.Decls {
@@ -106,5 +106,5 @@ func (g *GoApiParser) Parse(sourceFile string) (Api, error) {
 		}
 	}
 
-	return Api{}, nil
+	return nil, nil
 }

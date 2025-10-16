@@ -31,7 +31,11 @@ type Api struct {
 }
 
 type ApiParser interface {
-	Parse(sourceFile string) (Api, error)
+	Parse(sourceFile string) (*Api, error)
+}
+
+type ApiGenerator interface {
+	Generate(api *Api, destFile string) error
 }
 
 func main() {
@@ -51,9 +55,10 @@ func main() {
 		log.Panic(err)
 	}
 
-	//Dest, err = filepath.Abs(Dest)
-	//if err != nil {
-	//}
+	destAbs, err := filepath.Abs(Dest)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	if err := checkIsFile(srcAbs); err != nil {
 		log.Panic(err)
@@ -64,8 +69,17 @@ func main() {
 		log.Panic(err)
 	}
 
-	_, err = apiParser.Parse(srcAbs)
+	api, err := apiParser.Parse(srcAbs)
 	if err != nil {
+		log.Panic(err)
+	}
+
+	apiGenerator, err := apiGeneratorByExt(destAbs)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	if err := apiGenerator.Generate(api, destAbs); err != nil {
 		log.Panic(err)
 	}
 }
@@ -93,5 +107,20 @@ func apiParserByExt(src string) (ApiParser, error) {
 		return nil, fmt.Errorf("could not find file extension for %s", src)
 	default:
 		return nil, fmt.Errorf("unsupported file extension: %s", path.Ext(src))
+	}
+}
+
+func apiGeneratorByExt(dest string) (ApiGenerator, error) {
+	switch path.Ext(dest) {
+	case ".go":
+		return &GoApiGenerator{}, nil
+	case ".ts":
+		return &TypescriptApiGenerator{}, nil
+	case ".js":
+		return nil, fmt.Errorf("vanilla javascript is not supported and never will be")
+	case "":
+		return nil, fmt.Errorf("could not find file extension for %s", dest)
+	default:
+		return nil, fmt.Errorf("unsupported file extension: %s", path.Ext(dest))
 	}
 }
