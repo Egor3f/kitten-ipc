@@ -9,13 +9,6 @@ import (
 	"path/filepath"
 )
 
-type ProgLang string
-
-const (
-	Golang     ProgLang = "Golang"
-	TypeScript          = "Typescript"
-)
-
 var (
 	Src  string
 	Dest string
