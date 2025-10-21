@@ -1,6 +1,7 @@
 package kittenipc
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/go-json-experiment/json"
 	"github.com/samber/mo"
 )
 
@@ -24,6 +26,7 @@ type KittenIPC struct {
 	socketPath string
 	listener   net.Listener
 	conn       net.Conn
+	errCh      chan error
 }
 
 func New(cmd *exec.Cmd, api any, cfg Config) (*KittenIPC, error) {
@@ -43,6 +46,8 @@ func New(cmd *exec.Cmd, api any, cfg Config) (*KittenIPC, error) {
 	}
 	cmd.Args = append(cmd.Args, ipcSocketArg, k.socketPath)
 
+	k.errCh = make(chan error, 1)
+
 	return &k, nil
 }
 
@@ -60,6 +65,14 @@ func (k *KittenIPC) Start() error {
 		return fmt.Errorf("cmd start: %w", err)
 	}
 
+	if err := k.acceptConn(); err != nil {
+		return fmt.Errorf("accept connection: %w", err)
+	}
+
+	return nil
+}
+
+func (k *KittenIPC) acceptConn() error {
 	const acceptTimeout = time.Second * 10
 
 	res := make(chan mo.Result[net.Conn], 1)
@@ -83,9 +96,51 @@ func (k *KittenIPC) Start() error {
 			return fmt.Errorf("accept: %w", res.Error())
 		}
 		k.conn = res.MustGet()
+		k.startRcvData()
 	}
-
 	return nil
+}
+
+type MsgType int
+
+const (
+	MsgCall     MsgType = 1
+	MsgResponse MsgType = 2
+)
+
+type Message struct {
+	Type   MsgType `json:"type"`
+	Id     int64   `json:"id"`
+	Method string  `json:"method"`
+	Params []any   `json:"params"`
+	Result []any   `json:"result"`
+	Error  string  `json:"error"`
+}
+
+func (k *KittenIPC) startRcvData() {
+	scn := bufio.NewScanner(k.conn)
+	for scn.Scan() {
+		var msg Message
+		if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
+			k.raiseErr(fmt.Errorf("unmarshal message: %w", err))
+			break
+		}
+		k.processMsg(msg)
+	}
+	if err := scn.Err(); err != nil {
+		k.raiseErr(err)
+	}
+}
+
+func (k *KittenIPC) processMsg(msg Message) {
+
+}
+
+func (k *KittenIPC) raiseErr(err error) {
+	select {
+	case k.errCh <- err:
+	default:
+	}
 }
 
 func (k *KittenIPC) closeSock() error {
@@ -96,13 +151,36 @@ func (k *KittenIPC) closeSock() error {
 }
 
 func (k *KittenIPC) Wait() error {
-	if err := k.cmd.Wait(); err != nil {
-		return fmt.Errorf("cmd wait: %w", err)
-	}
 
-	if err := k.closeSock(); err != nil {
-		return fmt.Errorf("closeSock: %w", err)
+	waitErrCh := make(chan error, 1)
+
+	go func() {
+		waitErrCh <- k.cmd.Wait()
+	}()
+
+	select {
+	case err := <-k.errCh:
+		runtimeErr := fmt.Errorf("runtime error: %w", err)
+		killErr := k.cmd.Process.Kill()
+		return mergeErr(runtimeErr, killErr)
+	case err := <-waitErrCh:
+		if err != nil {
+			return fmt.Errorf("cmd wait: %w", err)
+		}
 	}
 
 	return nil
+}
+
+func mergeErr(errs ...error) (ret error) {
+	for _, err := range errs {
+		if err != nil {
+			if ret == nil {
+				ret = err
+			} else {
+				ret = fmt.Errorf("%w; %w", ret, err)
+			}
+		}
+	}
+	return
 }
