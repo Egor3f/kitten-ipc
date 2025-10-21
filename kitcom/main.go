@@ -20,17 +20,33 @@ func parseFlags() {
 	flag.Parse()
 }
 
-type Method struct {
-	Name string
+type ValType int
+
+// todo check TInt size < 64
+// todo check not float
+
+const (
+	TInt    ValType = 1
+	TString ValType = 2
+	TBool   ValType = 3
+	TBlob   ValType = 4
+	TArray  ValType = 5
+)
+
+type Val struct {
+	Name     string
+	Type     ValType
+	Children []Val
 }
 
-type Endpoint struct {
-	Name    string
-	Methods []Method
+type Method struct {
+	Name string
+	Pars []Val
+	Ret  []Val
 }
 
 type Api struct {
-	Endpoints []Endpoint
+	Methods []Method
 }
 
 type ApiParser interface {

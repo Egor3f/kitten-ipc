@@ -31,7 +31,11 @@ func main() {
 
 	cmdStr := fmt.Sprintf("node %s", path.Join(cwd, "..", "ts/index.js"))
 	cmd := exec.Command(cmdStr)
-	kit := kittenipc.New(cmd, &api)
+
+	kit, err := kittenipc.New(cmd, &api, kittenipc.Config{})
+	if err != nil {
+		log.Panic(err)
+	}
 
 	if err := kit.Start(); err != nil {
 		log.Panic(err)

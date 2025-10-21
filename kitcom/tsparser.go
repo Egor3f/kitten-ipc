@@ -19,6 +19,7 @@ type TypescriptApiParser struct {
 }
 
 type apiClass struct {
+	methods []Method
 }
 
 func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
@@ -56,22 +57,78 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 			return false
 		}
 
+		var isApi bool
+
+	outer:
 		for _, jsDocNode := range jsDocNodes {
 			jsDoc := jsDocNode.AsJSDoc()
 			for _, tag := range jsDoc.Tags.Nodes {
 				if tag.TagName().Text() == TagName {
 					for _, com := range tag.Comments() {
 						if strings.TrimSpace(com.Text()) == TagComment {
-							apiClasses = append(apiClasses, apiClass{})
-							return false
+							isApi = true
+							break outer
 						}
 					}
 				}
 			}
 		}
 
+		if !isApi {
+			return false
+		}
+
+		var apiCls apiClass
+
+		for _, member := range cls.MemberList().Nodes {
+			if member.Kind != ast.KindMethodDeclaration {
+				continue
+			}
+
+			method := member.AsMethodDeclaration()
+			var apiMethod Method
+			apiMethod.Name = method.Name().Text()
+			for _, parNode := range method.ParameterList().Nodes {
+				par := parNode.AsParameterDeclaration()
+				var apiPar Val
+				apiPar.Name = par.Name().Text()
+				switch par.Type.Kind {
+				case ast.KindNumberKeyword:
+					apiPar.Type = TInt
+				case ast.KindStringKeyword:
+					apiPar.Type = TString
+				case ast.KindBooleanKeyword:
+					apiPar.Type = TBool
+				default:
+					err = fmt.Errorf("parameter type %s is not supported yet", par.Type.Kind)
+					return false
+				}
+				apiMethod.Pars = append(apiMethod.Pars, apiPar)
+			}
+			var apiRet Val
+			switch method.Type.Kind {
+			case ast.KindNumberKeyword:
+				apiRet.Type = TInt
+			case ast.KindStringKeyword:
+				apiRet.Type = TString
+			case ast.KindBooleanKeyword:
+				apiRet.Type = TBool
+			default:
+				err = fmt.Errorf("return type %s is not supported yet", method.Type.Kind)
+				return false
+			}
+			apiMethod.Ret = []Val{apiRet}
+			apiCls.methods = append(apiCls.methods, apiMethod)
+		}
+
+		apiClasses = append(apiClasses, apiCls)
+
 		return false
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	if len(apiClasses) == 0 {
 		return nil, fmt.Errorf("no api class found")
@@ -81,5 +138,5 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 		return nil, fmt.Errorf("multiple api classes found")
 	}
 
-	return nil, nil
+	return &Api{Methods: apiClasses[0].methods}, nil
 }
