@@ -1,49 +1,75 @@
 package main
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
-	"html/template"
+	"go/format"
 	"os"
-	"path/filepath"
 	"strings"
+	"text/template"
 )
 
-type GoApiGenerator struct {
+type genData struct {
+	PkgName string
+	Api     *Api
 }
 
-var tpl = template.Must(template.New("gotpl").Parse(strings.TrimSpace(`
-
-
-
-`)))
+type GoApiGenerator struct {
+	pkgName string
+}
 
 func (g *GoApiGenerator) Generate(api *Api, destFile string) error {
-	destFileBak := filepath.Join(destFile, ".bak")
-	_, err := os.Stat(destFile)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("stat destination file: %w", err)
-	}
-	if !errors.Is(err, os.ErrNotExist) {
-		if err := os.Rename(destFile, destFileBak); err != nil {
-			return fmt.Errorf("backup destination file: %w", err)
-		}
+	tplCtx := genData{
+		PkgName: g.pkgName,
+		Api:     api,
 	}
 
+	tpl := template.New("gogen")
+	tpl = tpl.Funcs(map[string]any{
+		"receiver": func(name string) string {
+			return strings.ToLower(name)[0:1]
+		},
+		"typedef": func(t ValType) (string, error) {
+			td, ok := map[ValType]string{
+				TInt:    "int",
+				TString: "string",
+				TBool:   "bool",
+			}[t]
+			if !ok {
+				return "", fmt.Errorf("cannot generate type %v", t)
+			}
+			return td, nil
+		},
+	})
+	tpl = template.Must(tpl.ParseFiles("./go_gen.tmpl"))
+
+	var buf bytes.Buffer
+
+	if err := tpl.ExecuteTemplate(&buf, "go_gen.tmpl", tplCtx); err != nil {
+		return fmt.Errorf("execute template: %w", err)
+	}
+
+	if err := g.writeDest(destFile, buf.Bytes()); err != nil {
+		return fmt.Errorf("write file: %w", err)
+	}
+
+	return nil
+}
+
+func (g *GoApiGenerator) writeDest(destFile string, bytes []byte) error {
 	f, err := os.OpenFile(destFile, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("open destination file: %w", err)
 	}
 	defer f.Close()
 
-	if err := tpl.Execute(f, api); err != nil {
-		return fmt.Errorf("execute template: %w", err)
+	formatted, err := format.Source(bytes)
+	if err != nil {
+		return fmt.Errorf("format source: %w", err)
 	}
 
-	if _, err := os.Stat(destFileBak); err == nil {
-		if err := os.Remove(destFileBak); err != nil {
-			return fmt.Errorf("remove backup file: %w", err)
-		}
+	if _, err := f.Write(formatted); err != nil {
+		return fmt.Errorf("write formatted source: %w", err)
 	}
 	return nil
 }

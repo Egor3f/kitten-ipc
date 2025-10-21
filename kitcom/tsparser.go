@@ -18,10 +18,6 @@ const TagComment = "api"
 type TypescriptApiParser struct {
 }
 
-type apiClass struct {
-	methods []Method
-}
-
 func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 
 	f, err := os.Open(sourceFilePath)
@@ -44,7 +40,7 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 	}, string(fileContents), core.ScriptKindTS)
 	_ = sourceFile
 
-	var apiClasses []apiClass
+	var api Api
 
 	sourceFile.ForEachChild(func(node *ast.Node) bool {
 		if node.Kind != ast.KindClassDeclaration {
@@ -78,7 +74,9 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 			return false
 		}
 
-		var apiCls apiClass
+		var endpoint Endpoint
+
+		endpoint.Name = cls.Name().Text()
 
 		for _, member := range cls.MemberList().Nodes {
 			if member.Kind != ast.KindMethodDeclaration {
@@ -103,7 +101,7 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 					err = fmt.Errorf("parameter type %s is not supported yet", par.Type.Kind)
 					return false
 				}
-				apiMethod.Pars = append(apiMethod.Pars, apiPar)
+				apiMethod.Params = append(apiMethod.Params, apiPar)
 			}
 			var apiRet Val
 			switch method.Type.Kind {
@@ -118,10 +116,10 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 				return false
 			}
 			apiMethod.Ret = []Val{apiRet}
-			apiCls.methods = append(apiCls.methods, apiMethod)
+			endpoint.Methods = append(endpoint.Methods, apiMethod)
 		}
 
-		apiClasses = append(apiClasses, apiCls)
+		api.Endpoints = append(api.Endpoints, endpoint)
 
 		return false
 	})
@@ -130,13 +128,9 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 		return nil, err
 	}
 
-	if len(apiClasses) == 0 {
+	if len(api.Endpoints) == 0 {
 		return nil, fmt.Errorf("no api class found")
 	}
 
-	if len(apiClasses) > 1 {
-		return nil, fmt.Errorf("multiple api classes found")
-	}
-
-	return &Api{Methods: apiClasses[0].methods}, nil
+	return &api, nil
 }

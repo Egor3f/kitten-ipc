@@ -1,7 +1,7 @@
 /**
  * @kittenipc api
  */
-class IpcApi {
+class TsIpcApi {
     Div(a: number, b: number): number {
         return a / b;
     }
@@ -9,7 +9,7 @@ class IpcApi {
 
 
 function main() {
-    
+
 }
 
 main()

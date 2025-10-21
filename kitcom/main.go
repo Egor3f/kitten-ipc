@@ -3,22 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go/token"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 )
-
-var (
-	Src  string
-	Dest string
-)
-
-func parseFlags() {
-	flag.StringVar(&Src, "src", "", "Source file")
-	flag.StringVar(&Dest, "dest", "", "Dest file")
-	flag.Parse()
-}
 
 type ValType int
 
@@ -40,13 +30,18 @@ type Val struct {
 }
 
 type Method struct {
-	Name string
-	Pars []Val
-	Ret  []Val
+	Name   string
+	Params []Val
+	Ret    []Val
+}
+
+type Endpoint struct {
+	Name    string
+	Methods []Method
 }
 
 type Api struct {
-	Methods []Method
+	Endpoints []Endpoint
 }
 
 type ApiParser interface {
@@ -64,17 +59,21 @@ func main() {
 	//	log.Panic("GOFILE must be set")
 	//}
 
-	parseFlags()
-	if Src == "" || Dest == "" {
+	src := flag.String("src", "", "Source file")
+	dest := flag.String("dest", "", "Dest file")
+	pkgName := flag.String("pkgname", "", "Package name (for go)")
+	flag.Parse()
+
+	if *src == "" || *dest == "" {
 		log.Panic("source and destination must be set")
 	}
 
-	srcAbs, err := filepath.Abs(Src)
+	srcAbs, err := filepath.Abs(*src)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	destAbs, err := filepath.Abs(Dest)
+	destAbs, err := filepath.Abs(*dest)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -93,7 +92,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	apiGenerator, err := apiGeneratorByExt(destAbs)
+	apiGenerator, err := apiGeneratorByExt(destAbs, *pkgName)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -129,10 +128,18 @@ func apiParserByExt(src string) (ApiParser, error) {
 	}
 }
 
-func apiGeneratorByExt(dest string) (ApiGenerator, error) {
+func apiGeneratorByExt(dest string, pkgName string) (ApiGenerator, error) {
 	switch path.Ext(dest) {
 	case ".go":
-		return &GoApiGenerator{}, nil
+		if pkgName == "" {
+			return nil, fmt.Errorf("package name must be set for Go generation")
+		}
+		if !token.IsIdentifier(pkgName) {
+			return nil, fmt.Errorf("invalid package name: %s", pkgName)
+		}
+		return &GoApiGenerator{
+			pkgName: pkgName,
+		}, nil
 	case ".ts":
 		return &TypescriptApiGenerator{}, nil
 	case ".js":
