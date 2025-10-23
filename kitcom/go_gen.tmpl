@@ -5,7 +5,10 @@
 
 package {{.PkgName}}
 
-import kittenipc "efprojects.com/kitten-ipc"
+import (
+	"fmt"
+	kittenipc "efprojects.com/kitten-ipc"
+)
 
 {{range $e := .Api.Endpoints}}
 
@@ -17,13 +20,13 @@ type {{.Name}} struct {
 func ({{$e.Name | receiver}} *{{$e.Name}}) {{$mtd.Name}}(
 	{{- range $mtd.Params}}{{.Name}} {{.Type | typedef}}, {{end -}}
 ) (
-	{{- range $mtd.Ret}}{{.Type | typedef}}, {{end -}}
+	{{- range $mtd.Ret}}{{.Type | typedef}}, {{end -}}error
 ) {
 	results, err := {{$e.Name | receiver}}.Ipc.Call("{{$mtd.Name}}"{{range $mtd.Params}}, {{.Name}}{{end}})
 	if err != nil {
 		return {{range $idx, $ret := $mtd.Ret}}{{zerovalue $ret.Type}}, {{end}}, fmt.Errorf("call to {{$e.Name}}.{{$mtd.Name}} failed: %w", err)
 	}
-	return {{range $idx, $ret := $mtd.Ret}}results[{{$idx}}].({{$ret.Type | typedef}}), {{end}}
+	return {{range $idx, $ret := $mtd.Ret}}results[{{$idx}}].({{$ret.Type | typedef}}), {{end}}nil
 }
 {{end}}
 
