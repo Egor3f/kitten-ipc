@@ -40,6 +40,17 @@ func (g *GoApiGenerator) Generate(api *Api, destFile string) error {
 			}
 			return td, nil
 		},
+		"zerovalue": func(t ValType) (string, error) {
+			v, ok := map[ValType]string{
+				TInt:    "0",
+				TString: `""`,
+				TBool:   "false",
+			}[t]
+			if !ok {
+				return "", fmt.Errorf("cannot generate zero value for type %v", t)
+			}
+			return v, nil
+		},
 	})
 	tpl = template.Must(tpl.ParseFiles("./go_gen.tmpl"))
 
