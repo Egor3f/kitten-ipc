@@ -2,6 +2,7 @@ package kittenipc
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -16,14 +17,20 @@ import (
 	"github.com/samber/mo"
 )
 
+const ipcSocketArg = "--ipc-socket"
+
 type StdioMode int
 
-type Config struct {
-}
+type ipcMode int
+
+const (
+	modeParent ipcMode = 1
+	modeChild  ipcMode = 2
+)
 
 type KittenIPC struct {
+	mode     ipcMode
 	cmd      *exec.Cmd
-	cfg      Config
 	localApi any
 
 	socketPath string
@@ -36,12 +43,13 @@ type KittenIPC struct {
 	mu           sync.Mutex
 }
 
-func New(cmd *exec.Cmd, localApi any, cfg Config) (*KittenIPC, error) {
+func NewParent(cmd *exec.Cmd, localApi any) (*KittenIPC, error) {
 	k := KittenIPC{
+		mode:         modeParent,
 		cmd:          cmd,
-		cfg:          cfg,
 		localApi:     localApi,
 		pendingCalls: make(map[int64]chan callResult),
+		errCh:        make(chan error, 1),
 	}
 
 	k.socketPath = filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d.sock", os.Getpid()))
@@ -49,7 +57,6 @@ func New(cmd *exec.Cmd, localApi any, cfg Config) (*KittenIPC, error) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	const ipcSocketArg = "--ipc-socket"
 	if slices.Contains(cmd.Args, ipcSocketArg) {
 		return nil, fmt.Errorf("you should not use `%s` argument in your command", ipcSocketArg)
 	}
@@ -60,7 +67,33 @@ func New(cmd *exec.Cmd, localApi any, cfg Config) (*KittenIPC, error) {
 	return &k, nil
 }
 
+func NewChild(localApi any) (*KittenIPC, error) {
+	k := KittenIPC{
+		mode:         modeChild,
+		localApi:     localApi,
+		pendingCalls: make(map[int64]chan callResult),
+		errCh:        make(chan error, 1),
+	}
+
+	socketPath := flag.String("ipc-socket", "", "Path to IPC socket")
+	flag.Parse()
+
+	if *socketPath == "" {
+		return nil, fmt.Errorf("ipc socket path is missing")
+	}
+	k.socketPath = *socketPath
+
+	return &k, nil
+}
+
 func (k *KittenIPC) Start() error {
+	if k.mode == modeParent {
+		return k.startParent()
+	}
+	return k.startChild()
+}
+
+func (k *KittenIPC) startParent() error {
 	_ = os.Remove(k.socketPath)
 	listener, err := net.Listen("unix", k.socketPath)
 	if err != nil {
@@ -78,6 +111,16 @@ func (k *KittenIPC) Start() error {
 		return fmt.Errorf("accept connection: %w", err)
 	}
 
+	return nil
+}
+
+func (k *KittenIPC) startChild() error {
+	conn, err := net.Dial("unix", k.socketPath)
+	if err != nil {
+		return fmt.Errorf("connect to parent socket: %w", err)
+	}
+	k.conn = conn
+	k.startRcvData()
 	return nil
 }
 
@@ -289,7 +332,13 @@ func (k *KittenIPC) closeSock() error {
 }
 
 func (k *KittenIPC) Wait() error {
+	if k.mode == modeParent {
+		return k.waitParent()
+	}
+	return k.waitChild()
+}
 
+func (k *KittenIPC) waitParent() error {
 	waitErrCh := make(chan error, 1)
 
 	go func() {
@@ -307,6 +356,14 @@ func (k *KittenIPC) Wait() error {
 		}
 	}
 
+	return nil
+}
+
+func (k *KittenIPC) waitChild() error {
+	err := <-k.errCh
+	if err != nil {
+		return fmt.Errorf("ipc error: %w", err)
+	}
 	return nil
 }
 
