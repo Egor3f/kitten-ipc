@@ -136,6 +136,10 @@ func (k *KittenIPC) processMsg(msg Message) {
 
 }
 
+func (k *KittenIPC) Call() {
+
+}
+
 func (k *KittenIPC) raiseErr(err error) {
 	select {
 	case k.errCh <- err:

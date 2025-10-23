@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-type genData struct {
+type goGenData struct {
 	PkgName string
 	Api     *Api
 }
@@ -19,7 +19,7 @@ type GoApiGenerator struct {
 }
 
 func (g *GoApiGenerator) Generate(api *Api, destFile string) error {
-	tplCtx := genData{
+	tplCtx := goGenData{
 		PkgName: g.pkgName,
 		Api:     api,
 	}
