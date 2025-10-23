@@ -21,13 +21,13 @@ func (g *TypescriptApiGenerator) Generate(api *Api, destFile string) error {
 		Api: api,
 	}
 
-	tpl := template.New("gogen")
+	tpl := template.New("tsgen")
 	tpl = tpl.Funcs(map[string]any{
 		"typedef": func(t ValType) (string, error) {
 			td, ok := map[ValType]string{
 				TInt:    "number",
 				TString: "string",
-				TBool:   "bool",
+				TBool:   "boolean",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
