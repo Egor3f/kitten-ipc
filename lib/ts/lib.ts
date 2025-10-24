@@ -169,12 +169,7 @@ abstract class IPCCommon {
                 }
             };
             try {
-                this.sendMsg({
-                    type: MsgType.Call,
-                    id,
-                    method,
-                    params,
-                });
+                this.sendMsg({type: MsgType.Call, id, method, params});
             } catch (e) {
                 delete this.pendingCalls[id];
                 reject(new Error(`send call: ${e}`));
