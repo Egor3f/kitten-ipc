@@ -2,6 +2,7 @@ package kittenipc
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
@@ -13,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-json-experiment/json"
 	"github.com/samber/mo"
 )
 
@@ -22,6 +22,8 @@ const ipcSocketArg = "--ipc-socket"
 type StdioMode int
 
 type MsgType int
+
+type Vals []any
 
 const (
 	MsgCall     MsgType = 1
@@ -32,14 +34,9 @@ type Message struct {
 	Type   MsgType `json:"type"`
 	Id     int64   `json:"id"`
 	Method string  `json:"method"`
-	Params []any   `json:"params"`
-	Result []any   `json:"result"`
+	Params Vals    `json:"params"`
+	Result Vals    `json:"result"`
 	Error  string  `json:"error"`
-}
-
-type callResult struct {
-	result []any
-	err    error
 }
 
 type ipcCommon struct {
@@ -48,7 +45,7 @@ type ipcCommon struct {
 	conn         net.Conn
 	errCh        chan error
 	nextId       int64
-	pendingCalls map[int64]chan callResult
+	pendingCalls map[int64]chan mo.Result[Vals]
 	mu           sync.Mutex
 }
 
@@ -199,6 +196,15 @@ func (ipc *ipcCommon) raiseErr(err error) {
 	select {
 	case ipc.errCh <- err:
 	default:
+	}
+}
+
+func (ipc *ipcCommon) cleanup() {
+	ipc.mu.Lock()
+	defer ipc.mu.Unlock()
+	_ = ipc.conn.Close()
+	for _, call := range ipc.pendingCalls {
+		call <- mo.Err[Vals](fmt.Errorf("call cancelled due to ipc termination"))
 	}
 }
 

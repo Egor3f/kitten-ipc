@@ -1,4 +1,4 @@
-import {KittenIPC} from '../../lib/ts/lib.js';
+import {KittenIPC} from '../../lib/ts/lib.ts';
 import GoIpcApi from './goapi.gen.ts';
 
 /**

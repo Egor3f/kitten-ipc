@@ -1,12 +1,16 @@
 {
   "name": "kitten-ipc",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "lib.ts",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@types/node": "^22.10.5",
+    "ts-events": "^3.4.1"
+  }
 }
