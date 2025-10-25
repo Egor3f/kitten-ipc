@@ -8,48 +8,18 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"efprojects.com/kitten-ipc/kitcom/api"
+	"efprojects.com/kitten-ipc/kitcom/golang"
+	"efprojects.com/kitten-ipc/kitcom/ts"
 )
-
-type ValType int
-
-// todo check TInt size < 64
-// todo check not float
-
-const (
-	TInt    ValType = 1
-	TString ValType = 2
-	TBool   ValType = 3
-	TBlob   ValType = 4
-	TArray  ValType = 5
-)
-
-type Val struct {
-	Name     string
-	Type     ValType
-	Children []Val
-}
-
-type Method struct {
-	Name   string
-	Params []Val
-	Ret    []Val
-}
-
-type Endpoint struct {
-	Name    string
-	Methods []Method
-}
-
-type Api struct {
-	Endpoints []Endpoint
-}
 
 type ApiParser interface {
-	Parse(sourceFile string) (*Api, error)
+	Parse(sourceFile string) (*api.Api, error)
 }
 
 type ApiGenerator interface {
-	Generate(api *Api, destFile string) error
+	Generate(api *api.Api, destFile string) error
 }
 
 func main() {
@@ -116,9 +86,9 @@ func checkIsFile(src string) error {
 func apiParserByExt(src string) (ApiParser, error) {
 	switch path.Ext(src) {
 	case ".go":
-		return &GoApiParser{}, nil
+		return &golang.GoApiParser{}, nil
 	case ".ts":
-		return &TypescriptApiParser{}, nil
+		return &ts.TypescriptApiParser{}, nil
 	case ".js":
 		return nil, fmt.Errorf("vanilla javascript is not supported and never will be")
 	case "":
@@ -137,11 +107,11 @@ func apiGeneratorByExt(dest string, pkgName string) (ApiGenerator, error) {
 		if !token.IsIdentifier(pkgName) {
 			return nil, fmt.Errorf("invalid package name: %s", pkgName)
 		}
-		return &GoApiGenerator{
-			pkgName: pkgName,
+		return &golang.GoApiGenerator{
+			PkgName: pkgName,
 		}, nil
 	case ".ts":
-		return &TypescriptApiGenerator{}, nil
+		return &ts.TypescriptApiGenerator{}, nil
 	case ".js":
 		return nil, fmt.Errorf("vanilla javascript is not supported and never will be")
 	case "":

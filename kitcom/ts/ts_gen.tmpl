@@ -1,7 +1,6 @@
-{{- /*gotype: efprojects.com/kitten-ipc/kitcom.tsGenData*/ -}}
-
 import {ParentIPC, ChildIPC} from 'kitten-ipc';
 
+{{- /*gotype: efprojects.com/kitten-ipc/kitcom/ts.tsGenData*/ -}}
 {{range $e := .Api.Endpoints}}
 export default class {{$e.Name}} {
     private ipc: ParentIPC | ChildIPC;
@@ -14,9 +13,10 @@ export default class {{$e.Name}} {
     async {{ $mtd.Name }}(
         {{ range $par := $mtd.Params }}{{$par.Name}}: {{$par.Type | typedef }}, {{end}}
     ): Promise<{{if len $mtd.Ret}}{{(index $mtd.Ret 0).Type | typedef }}{{else}}void{{end}}> {
-        return await this.ipc.call('{{$mtd.Name}}',
+        const results = await this.ipc.call('{{$mtd.Name}}',
             {{range $par := $mtd.Params}}{{$par.Name}}, {{end}}
         );
+		return {{range $ret := $mtd.}}
     }
 {{end}}
 }

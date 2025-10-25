@@ -1,4 +1,4 @@
-package main
+package ts
 
 import (
 	"bytes"
@@ -7,27 +7,29 @@ import (
 	"os"
 	"os/exec"
 	"text/template"
+
+	"efprojects.com/kitten-ipc/kitcom/api"
 )
 
 type tsGenData struct {
-	Api *Api
+	Api *api.Api
 }
 
 type TypescriptApiGenerator struct {
 }
 
-func (g *TypescriptApiGenerator) Generate(api *Api, destFile string) error {
+func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error {
 	tplCtx := tsGenData{
-		Api: api,
+		Api: apis,
 	}
 
 	tpl := template.New("tsgen")
 	tpl = tpl.Funcs(map[string]any{
-		"typedef": func(t ValType) (string, error) {
-			td, ok := map[ValType]string{
-				TInt:    "number",
-				TString: "string",
-				TBool:   "boolean",
+		"typedef": func(t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    "number",
+				api.TString: "string",
+				api.TBool:   "boolean",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)

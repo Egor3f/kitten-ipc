@@ -1,4 +1,4 @@
-package main
+package golang
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"go/parser"
 	"go/token"
 	"regexp"
+
+	"efprojects.com/kitten-ipc/kitcom/api"
 )
 
 var decorComment = regexp.MustCompile(`^//\s?kittenipc:api$`)
@@ -13,9 +15,9 @@ var decorComment = regexp.MustCompile(`^//\s?kittenipc:api$`)
 type GoApiParser struct {
 }
 
-func (g *GoApiParser) Parse(sourceFile string) (*Api, error) {
+func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 
-	var api Api
+	var apis api.Api
 
 	fileSet := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileSet, sourceFile, nil, parser.ParseComments|parser.SkipObjectResolution)
@@ -50,12 +52,12 @@ func (g *GoApiParser) Parse(sourceFile string) (*Api, error) {
 		}
 		_ = structType
 
-		api.Endpoints = append(api.Endpoints, Endpoint{
+		apis.Endpoints = append(apis.Endpoints, api.Endpoint{
 			Name: typeSpec.Name.Name,
 		})
 	}
 
-	if len(api.Endpoints) == 0 {
+	if len(apis.Endpoints) == 0 {
 		return nil, fmt.Errorf("no api struct found")
 	}
 
@@ -86,20 +88,20 @@ func (g *GoApiParser) Parse(sourceFile string) (*Api, error) {
 			continue
 		}
 
-		for i, endpoint := range api.Endpoints {
+		for i, endpoint := range apis.Endpoints {
 			if recvIdent.Name == endpoint.Name {
-				var apiMethod Method
+				var apiMethod api.Method
 				apiMethod.Name = funcDecl.Name.Name
 				for _, param := range funcDecl.Type.Params.List {
-					var apiPar Val
+					var apiPar api.Val
 					ident := param.Type.(*ast.Ident)
 					switch ident.Name {
 					case "int":
-						apiPar.Type = TInt
+						apiPar.Type = api.TInt
 					case "string":
-						apiPar.Type = TString
+						apiPar.Type = api.TString
 					case "bool":
-						apiPar.Type = TBool
+						apiPar.Type = api.TBool
 					default:
 						return nil, fmt.Errorf("parameter type %s is not supported yet", ident.Name)
 					}
@@ -110,15 +112,15 @@ func (g *GoApiParser) Parse(sourceFile string) (*Api, error) {
 					apiMethod.Params = append(apiMethod.Params, apiPar)
 				}
 				for _, ret := range funcDecl.Type.Results.List {
-					var apiRet Val
+					var apiRet api.Val
 					ident := ret.Type.(*ast.Ident)
 					switch ident.Name {
 					case "int":
-						apiRet.Type = TInt
+						apiRet.Type = api.TInt
 					case "string":
-						apiRet.Type = TString
+						apiRet.Type = api.TString
 					case "bool":
-						apiRet.Type = TBool
+						apiRet.Type = api.TBool
 					case "error":
 						// errors are processed other way
 						continue
@@ -130,10 +132,10 @@ func (g *GoApiParser) Parse(sourceFile string) (*Api, error) {
 					}
 					apiMethod.Ret = append(apiMethod.Ret, apiRet)
 				}
-				api.Endpoints[i].Methods = append(api.Endpoints[i].Methods, apiMethod)
+				apis.Endpoints[i].Methods = append(apis.Endpoints[i].Methods, apiMethod)
 			}
 		}
 	}
 
-	return &api, nil
+	return &apis, nil
 }

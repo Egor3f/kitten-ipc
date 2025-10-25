@@ -1,4 +1,4 @@
-package main
+package golang
 
 import (
 	"bytes"
@@ -7,21 +7,23 @@ import (
 	"os"
 	"strings"
 	"text/template"
+
+	"efprojects.com/kitten-ipc/kitcom/api"
 )
 
 type goGenData struct {
 	PkgName string
-	Api     *Api
+	Api     *api.Api
 }
 
 type GoApiGenerator struct {
-	pkgName string
+	PkgName string
 }
 
-func (g *GoApiGenerator) Generate(api *Api, destFile string) error {
+func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 	tplCtx := goGenData{
-		PkgName: g.pkgName,
-		Api:     api,
+		PkgName: g.PkgName,
+		Api:     apis,
 	}
 
 	tpl := template.New("gogen")
@@ -29,22 +31,22 @@ func (g *GoApiGenerator) Generate(api *Api, destFile string) error {
 		"receiver": func(name string) string {
 			return strings.ToLower(name)[0:1]
 		},
-		"typedef": func(t ValType) (string, error) {
-			td, ok := map[ValType]string{
-				TInt:    "int",
-				TString: "string",
-				TBool:   "bool",
+		"typedef": func(t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    "int",
+				api.TString: "string",
+				api.TBool:   "bool",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
 			}
 			return td, nil
 		},
-		"zerovalue": func(t ValType) (string, error) {
-			v, ok := map[ValType]string{
-				TInt:    "0",
-				TString: `""`,
-				TBool:   "false",
+		"zerovalue": func(t api.ValType) (string, error) {
+			v, ok := map[api.ValType]string{
+				api.TInt:    "0",
+				api.TString: `""`,
+				api.TBool:   "false",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate zero value for type %v", t)

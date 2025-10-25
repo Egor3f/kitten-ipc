@@ -1,4 +1,4 @@
-package main
+package ts
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"efprojects.com/kitten-ipc/kitcom/api"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/parser"
@@ -18,7 +19,7 @@ const TagComment = "api"
 type TypescriptApiParser struct {
 }
 
-func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
+func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 
 	f, err := os.Open(sourceFilePath)
 	if err != nil {
@@ -40,7 +41,7 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 	}, string(fileContents), core.ScriptKindTS)
 	_ = sourceFile
 
-	var api Api
+	var apis api.Api
 
 	sourceFile.ForEachChild(func(node *ast.Node) bool {
 		if node.Kind != ast.KindClassDeclaration {
@@ -74,7 +75,7 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 			return false
 		}
 
-		var endpoint Endpoint
+		var endpoint api.Endpoint
 
 		endpoint.Name = cls.Name().Text()
 
@@ -84,42 +85,42 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 			}
 
 			method := member.AsMethodDeclaration()
-			var apiMethod Method
+			var apiMethod api.Method
 			apiMethod.Name = method.Name().Text()
 			for _, parNode := range method.ParameterList().Nodes {
 				par := parNode.AsParameterDeclaration()
-				var apiPar Val
+				var apiPar api.Val
 				apiPar.Name = par.Name().Text()
 				switch par.Type.Kind {
 				case ast.KindNumberKeyword:
-					apiPar.Type = TInt
+					apiPar.Type = api.TInt
 				case ast.KindStringKeyword:
-					apiPar.Type = TString
+					apiPar.Type = api.TString
 				case ast.KindBooleanKeyword:
-					apiPar.Type = TBool
+					apiPar.Type = api.TBool
 				default:
 					err = fmt.Errorf("parameter type %s is not supported yet", par.Type.Kind)
 					return false
 				}
 				apiMethod.Params = append(apiMethod.Params, apiPar)
 			}
-			var apiRet Val
+			var apiRet api.Val
 			switch method.Type.Kind {
 			case ast.KindNumberKeyword:
-				apiRet.Type = TInt
+				apiRet.Type = api.TInt
 			case ast.KindStringKeyword:
-				apiRet.Type = TString
+				apiRet.Type = api.TString
 			case ast.KindBooleanKeyword:
-				apiRet.Type = TBool
+				apiRet.Type = api.TBool
 			default:
 				err = fmt.Errorf("return type %s is not supported yet", method.Type.Kind)
 				return false
 			}
-			apiMethod.Ret = []Val{apiRet}
+			apiMethod.Ret = []api.Val{apiRet}
 			endpoint.Methods = append(endpoint.Methods, apiMethod)
 		}
 
-		api.Endpoints = append(api.Endpoints, endpoint)
+		apis.Endpoints = append(apis.Endpoints, endpoint)
 
 		return false
 	})
@@ -128,9 +129,9 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*Api, error) {
 		return nil, err
 	}
 
-	if len(api.Endpoints) == 0 {
+	if len(apis.Endpoints) == 0 {
 		return nil, fmt.Errorf("no api class found")
 	}
 
-	return &api, nil
+	return &apis, nil
 }
