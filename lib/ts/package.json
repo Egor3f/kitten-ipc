@@ -1,14 +1,25 @@
 {
   "name": "kitten-ipc",
+  "description": "ipc lib",
   "version": "1.0.0",
-  "main": "lib.ts",
+  "author": "Egor3f <ef@efprojects.com>",
+  "license": "Apache 2.0",
+
   "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "./dist/index.js",
+  "types": "./dist/types.d.ts",
+
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/types.d.ts"
+    }
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+
+  "scripts": {
+    "build": "tsc"
+  },
+
   "dependencies": {
     "@types/node": "^22.10.5",
     "ts-events": "^3.4.1"

@@ -1,13 +1,12 @@
 {
-  "name": "kitten-example-simple",
+  "name": "kitten-ipc-example",
   "version": "1.0.0",
+  "author": "Egor3f <ef@efprojects.com>",
+  "license": "Apache 2.0",
+  "description": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
-  },
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  }
 }
