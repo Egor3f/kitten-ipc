@@ -9,7 +9,11 @@ import (
 	"text/template"
 
 	"efprojects.com/kitten-ipc/kitcom/api"
+	_ "embed"
 )
+
+//go:embed go_gen.tmpl
+var templateString string
 
 type goGenData struct {
 	PkgName string
@@ -54,11 +58,11 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 			return v, nil
 		},
 	})
-	tpl = template.Must(tpl.ParseFiles("./golang/go_gen.tmpl"))
+	tpl = template.Must(tpl.Parse(templateString))
 
 	var buf bytes.Buffer
 
-	if err := tpl.ExecuteTemplate(&buf, "go_gen.tmpl", tplCtx); err != nil {
+	if err := tpl.ExecuteTemplate(&buf, "gogen", tplCtx); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 

@@ -9,7 +9,11 @@ import (
 	"text/template"
 
 	"efprojects.com/kitten-ipc/kitcom/api"
+	_ "embed"
 )
+
+//go:embed ts_gen.tmpl
+var templateString string
 
 type tsGenData struct {
 	Api *api.Api
@@ -37,11 +41,11 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 			return td, nil
 		},
 	})
-	tpl = template.Must(tpl.ParseFiles("./ts/ts_gen.tmpl"))
+	tpl = template.Must(tpl.Parse(templateString))
 
 	var buf bytes.Buffer
 
-	if err := tpl.ExecuteTemplate(&buf, "ts_gen.tmpl", tplCtx); err != nil {
+	if err := tpl.ExecuteTemplate(&buf, "tsgen", tplCtx); err != nil {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
