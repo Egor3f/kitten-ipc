@@ -2,16 +2,27 @@
 
 package main
 
-import kittenipc "efprojects.com/kitten-ipc"
+import (
+	kittenipc "efprojects.com/kitten-ipc"
+	"fmt"
+)
+
+type callable interface {
+	Call(method string, params ...any) (kittenipc.Vals, error)
+}
 
 type TsIpcApi struct {
-	Ipc *kittenipc.KittenIPC
+	Ipc callable
 }
 
 func (t *TsIpcApi) Div(
 	a int, b int,
-) int {
-	return t.Ipc.Call(
-		"Div", a, b,
-	)
+) (
+	int, error,
+) {
+	results, err := t.Ipc.Call("TsIpcApi", "Div", a, b)
+	if err != nil {
+		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
+	}
+	return results[0].(int), nil
 }

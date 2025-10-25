@@ -10,21 +10,25 @@ import (
 	kittenipc "efprojects.com/kitten-ipc"
 )
 
+type callable interface {
+	Call(method string, params ...any) (kittenipc.Vals, error)
+}
+
 {{range $e := .Api.Endpoints}}
 
 type {{.Name}} struct {
-	Ipc *kittenipc.KittenIPC
+	Ipc callable
 }
 
 {{range $mtd := $e.Methods}}
 func ({{$e.Name | receiver}} *{{$e.Name}}) {{$mtd.Name}}(
 {{range $mtd.Params}}{{.Name}} {{.Type | typedef}}, {{end}}
 ) (
-{{range $mtd.Ret}}{{.Type | typedef}}, {{end}}error
+{{range $mtd.Ret}}{{.Type | typedef}}, {{end}}error,
 ) {
 	results, err := {{$e.Name | receiver}}.Ipc.Call("{{$e.Name}}", "{{$mtd.Name}}"{{range $mtd.Params}}, {{.Name}}{{end}})
 	if err != nil {
-		return {{range $mtd.Ret}}{{.Type | zerovalue}}, {{end}}, fmt.Errorf("call to {{$e.Name}}.{{$mtd.Name}} failed: %w", err)
+		return {{range $mtd.Ret}}{{.Type | zerovalue}}, {{end}} fmt.Errorf("call to {{$e.Name}}.{{$mtd.Name}} failed: %w", err)
 	}
 	return {{range $idx, $ret := $mtd.Ret}}results[{{$idx}}].({{$ret.Type | typedef}}), {{end}}nil
 }
