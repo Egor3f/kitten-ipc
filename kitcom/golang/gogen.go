@@ -54,7 +54,7 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 			return v, nil
 		},
 	})
-	tpl = template.Must(tpl.ParseFiles("./go_gen.tmpl"))
+	tpl = template.Must(tpl.ParseFiles("./golang/go_gen.tmpl"))
 
 	var buf bytes.Buffer
 

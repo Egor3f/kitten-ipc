@@ -16,7 +16,7 @@ export default class {{$e.Name}} {
         const results = await this.ipc.call('{{$mtd.Name}}',
             {{range $par := $mtd.Params}}{{$par.Name}}, {{end}}
         );
-		return {{range $ret := $mtd.}}
+		return {{range $i, $ret := $mtd.Ret}}{{if $i}}, {{end}}results[{{$i}}] as {{$ret.Type | typedef}}{{end}}
     }
 {{end}}
 }

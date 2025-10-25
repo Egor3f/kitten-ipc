@@ -37,7 +37,7 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 			return td, nil
 		},
 	})
-	tpl = template.Must(tpl.ParseFiles("./ts_gen.tmpl"))
+	tpl = template.Must(tpl.ParseFiles("./ts/ts_gen.tmpl"))
 
 	var buf bytes.Buffer
 
@@ -64,8 +64,9 @@ func (g *TypescriptApiGenerator) writeDest(destFile string, bytes []byte) error 
 	}
 
 	prettierCmd := exec.Command("npx", "prettier", destFile, "--write")
-	if err := prettierCmd.Run(); err != nil {
+	if out, err := prettierCmd.CombinedOutput(); err != nil {
 		log.Printf("Prettier returned error: %v", err)
+		log.Printf("Output: \n%s", string(out))
 	}
 
 	return nil

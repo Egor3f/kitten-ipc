@@ -1,5 +1,4 @@
 import { ParentIPC, ChildIPC } from "kitten-ipc";
-
 export default class IpcApi {
   private ipc: ParentIPC | ChildIPC;
 
