@@ -179,7 +179,7 @@ abstract class IPCCommon {
 }
 
 
-class ParentIPC extends IPCCommon {
+export class ParentIPC extends IPCCommon {
     private readonly cmdPath: string;
     private readonly cmdArgs: string[];
     private cmd: ChildProcess | null = null;

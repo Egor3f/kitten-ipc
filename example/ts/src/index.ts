@@ -1,5 +1,5 @@
-import {KittenIPC} from '../../lib/ts/lib.ts';
-import GoIpcApi from './goapi.gen.ts';
+import {ChildIPC} from 'kitten-ipc';
+import GoIpcApi from './goapi.gen.js';
 
 /**
  * @kittenipc api
@@ -15,7 +15,7 @@ class TsIpcApi {
 
 async function main() {
     const localApi = new TsIpcApi();
-    const ipc = new KittenIPC(localApi);
+    const ipc = new ChildIPC(localApi);
     const goApi = new GoIpcApi(ipc);
 
     await ipc.start();
