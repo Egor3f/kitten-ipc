@@ -1,0 +1,23 @@
+{{- /*gotype: efprojects.com/kitten-ipc/kitcom.tsGenData*/ -}}
+
+import {ParentIPC, ChildIPC} from 'kitten-ipc';
+
+{{range $e := .Api.Endpoints}}
+export default class {{$e.Name}} {
+    private ipc: ParentIPC | ChildIPC;
+
+    constructor(ipc: ParentIPC | ChildIPC) {
+        this.ipc = ipc;
+    }
+
+{{range $mtd := $e.Methods}}
+    async {{ $mtd.Name }}(
+        {{ range $par := $mtd.Params }}{{$par.Name}}: {{$par.Type | typedef }}, {{end}}
+    ): Promise<{{if len $mtd.Ret}}{{(index $mtd.Ret 0).Type | typedef }}{{else}}void{{end}}> {
+        return await this.ipc.call('{{$mtd.Name}}',
+            {{range $par := $mtd.Params}}{{$par.Name}}, {{end}}
+        );
+    }
+{{end}}
+}
+{{end}}
