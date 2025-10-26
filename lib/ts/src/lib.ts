@@ -51,8 +51,7 @@ abstract class IPCCommon {
 
         this.localApis = {};
         for (const localApi of localApis) {
-            const className = (localApi as {name: string})['name'];
-            this.localApis[className] = localApi;
+            this.localApis[localApi.constructor.name] = localApi;
         }
     }
 
