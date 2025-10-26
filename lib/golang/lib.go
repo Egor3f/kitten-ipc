@@ -39,6 +39,10 @@ type Message struct {
 	Error  string  `json:"error"`
 }
 
+type Callable interface {
+	Call(method string, params ...any) (Vals, error)
+}
+
 type ipcCommon struct {
 	localApi     any
 	socketPath   string
@@ -279,7 +283,7 @@ func (p *ParentIPC) acceptConn() error {
 			return fmt.Errorf("accept: %w", res.Error())
 		}
 		p.conn = res.MustGet()
-		p.readConn()
+		go p.readConn()
 	}
 	return nil
 }

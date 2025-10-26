@@ -104,19 +104,21 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 				}
 				apiMethod.Params = append(apiMethod.Params, apiPar)
 			}
-			var apiRet api.Val
-			switch method.Type.Kind {
-			case ast.KindNumberKeyword:
-				apiRet.Type = api.TInt
-			case ast.KindStringKeyword:
-				apiRet.Type = api.TString
-			case ast.KindBooleanKeyword:
-				apiRet.Type = api.TBool
-			default:
-				err = fmt.Errorf("return type %s is not supported yet", method.Type.Kind)
-				return false
+			if method.Type != nil {
+				var apiRet api.Val
+				switch method.Type.Kind {
+				case ast.KindNumberKeyword:
+					apiRet.Type = api.TInt
+				case ast.KindStringKeyword:
+					apiRet.Type = api.TString
+				case ast.KindBooleanKeyword:
+					apiRet.Type = api.TBool
+				default:
+					err = fmt.Errorf("return type %s is not supported yet", method.Type.Kind)
+					return false
+				}
+				apiMethod.Ret = []api.Val{apiRet}
 			}
-			apiMethod.Ret = []api.Val{apiRet}
 			endpoint.Methods = append(endpoint.Methods, apiMethod)
 		}
 

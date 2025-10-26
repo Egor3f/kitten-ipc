@@ -7,7 +7,7 @@ import * as fs from 'node:fs';
 import * as util from 'node:util';
 import {QueuedEvent} from 'ts-events';
 
-const IPC_SOCKET_ARG = '--ipc-socket';
+const IPC_SOCKET_ARG = 'ipc-socket';
 
 enum MsgType {
     Call = 1,
@@ -38,17 +38,22 @@ interface CallResult {
 }
 
 abstract class IPCCommon {
-    protected localApi: any;
+    protected localApis: Record<string, any>;
     protected socketPath: string;
     protected conn: net.Socket | null = null;
     protected nextId: number = 0;
     protected pendingCalls: Record<number, (result: CallResult) => void> = {};
     protected errors: QueuedEvent<Error>;
 
-    protected constructor(localApi: any, socketPath: string) {
-        this.localApi = localApi;
+    protected constructor(localApis: object[], socketPath: string) {
         this.socketPath = socketPath;
         this.errors = new QueuedEvent();
+
+        this.localApis = {};
+        for (const localApi of localApis) {
+            const className = (localApi as {name: string})['name'];
+            this.localApis[className] = localApi;
+        }
     }
 
     protected readConn(): void {
@@ -89,12 +94,17 @@ abstract class IPCCommon {
     }
 
     protected handleCall(msg: CallMessage): void {
-        if (!this.localApi) {
-            this.sendMsg({type: MsgType.Response, id: msg.id, error: 'remote side does not accept ipc calls'});
+        const [endpointName, methodName] = msg.method.split('.');
+        if(!endpointName || !methodName) {
+            this.sendMsg({type: MsgType.Response, id: msg.id, error: `call malformed: ${msg.method}`});
             return;
         }
-
-        const method = this.localApi[msg.method];
+        const endpoint = this.localApis[endpointName];
+        if(!endpoint) {
+            this.sendMsg({type: MsgType.Response, id: msg.id, error: `endpoint not found: ${endpointName}`});
+            return;
+        }
+        const method = endpoint[methodName];
         if (!method || typeof method !== 'function') {
             this.sendMsg({type: MsgType.Response, id: msg.id, error: `method not found: ${msg.method}`});
             return;
@@ -111,7 +121,7 @@ abstract class IPCCommon {
         }
 
         try {
-            const result = method.apply(this.localApi, msg.params);
+            const result = method.apply(this.localApis, msg.params);
 
             if (result instanceof Promise) {
                 result
@@ -185,13 +195,13 @@ export class ParentIPC extends IPCCommon {
     private cmd: ChildProcess | null = null;
     private readonly listener: net.Server;
 
-    constructor(cmdPath: string, cmdArgs: string[], localApi: any) {
+    constructor(cmdPath: string, cmdArgs: string[], ...localApis: object[]) {
         const socketPath = path.join(os.tmpdir(), `kitten-ipc-${process.pid}.sock`);
-        super(localApi, socketPath);
+        super(localApis, socketPath);
 
         this.cmdPath = cmdPath;
-        if (cmdArgs.includes(IPC_SOCKET_ARG)) {
-            throw new Error(`you should not use '${IPC_SOCKET_ARG}' argument in your command`);
+        if (cmdArgs.includes(`--${IPC_SOCKET_ARG}`)) {
+            throw new Error(`you should not use '--${IPC_SOCKET_ARG}' argument in your command`);
         }
         this.cmdArgs = cmdArgs;
 
@@ -211,7 +221,7 @@ export class ParentIPC extends IPCCommon {
             this.listener.on('error', reject);
         });
 
-        const cmdArgs = [...this.cmdArgs, IPC_SOCKET_ARG, this.socketPath];
+        const cmdArgs = [...this.cmdArgs, `--${IPC_SOCKET_ARG}`, this.socketPath];
         this.cmd = spawn(this.cmdPath, cmdArgs, {stdio: 'inherit'});
 
         this.cmd.on('error', (err) => {
@@ -260,8 +270,8 @@ export class ParentIPC extends IPCCommon {
 
 
 export class ChildIPC extends IPCCommon {
-    constructor(localApi: any) {
-        super(localApi, socketPathFromArgs());
+    constructor(...localApis: object[]) {
+        super(localApis, socketPathFromArgs());
     }
 
     async start(): Promise<void> {
@@ -283,17 +293,19 @@ export class ChildIPC extends IPCCommon {
 
 
 function socketPathFromArgs(): string {
-    const {values} = util.parseArgs({options: {
-            IPC_SOCKET_ARG: {
+    const {values} = util.parseArgs({
+        options: {
+            [IPC_SOCKET_ARG]: {
                 type: 'string',
             }
-        }});
+        }
+    });
 
-    if(!values.IPC_SOCKET_ARG) {
+    if (!values[IPC_SOCKET_ARG]) {
         throw new Error('ipc socket path is missing');
     }
 
-    return values.IPC_SOCKET_ARG;
+    return values[IPC_SOCKET_ARG];
 }
 
 

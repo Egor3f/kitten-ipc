@@ -23,13 +23,13 @@ interface CallResult {
     error: Error | null;
 }
 declare abstract class IPCCommon {
-    protected localApi: any;
+    protected localApis: Record<string, any>;
     protected socketPath: string;
     protected conn: net.Socket | null;
     protected nextId: number;
     protected pendingCalls: Record<number, (result: CallResult) => void>;
     protected errors: QueuedEvent<Error>;
-    protected constructor(localApi: any, socketPath: string);
+    protected constructor(localApis: object[], socketPath: string);
     protected readConn(): void;
     protected processMsg(msg: Message): void;
     protected handleCall(msg: CallMessage): void;
@@ -43,13 +43,13 @@ export declare class ParentIPC extends IPCCommon {
     private readonly cmdArgs;
     private cmd;
     private readonly listener;
-    constructor(cmdPath: string, cmdArgs: string[], localApi: any);
+    constructor(cmdPath: string, cmdArgs: string[], ...localApis: object[]);
     start(): Promise<void>;
     private acceptConn;
     wait(): Promise<void>;
 }
 export declare class ChildIPC extends IPCCommon {
-    constructor(localApi: any);
+    constructor(...localApis: object[]);
     start(): Promise<void>;
     wait(): Promise<void>;
 }

@@ -57,7 +57,7 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 }
 
 func (g *TypescriptApiGenerator) writeDest(destFile string, bytes []byte) error {
-	f, err := os.OpenFile(destFile, os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(destFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("open destination file: %w", err)
 	}
