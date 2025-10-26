@@ -107,8 +107,8 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 			if method.Type != nil {
 				var apiRet api.Val
 				switch method.Type.Kind {
-				case ast.KindNumberKeyword:
-					apiRet.Type = api.TInt
+				//case ast.KindNumberKeyword:
+				//	apiRet.Type = api.TInt
 				case ast.KindStringKeyword:
 					apiRet.Type = api.TString
 				case ast.KindBooleanKeyword:

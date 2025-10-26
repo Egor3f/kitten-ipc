@@ -46,11 +46,11 @@ func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 			continue
 		}
 
-		structType, ok := typeSpec.Type.(*ast.StructType)
-		if !ok {
+		_, isStruct := typeSpec.Type.(*ast.StructType)
+		_, isIface := typeSpec.Type.(*ast.InterfaceType)
+		if !isStruct && !isIface {
 			continue
 		}
-		_ = structType
 
 		apis.Endpoints = append(apis.Endpoints, api.Endpoint{
 			Name: typeSpec.Name.Name,
@@ -96,8 +96,8 @@ func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 					var apiPar api.Val
 					ident := param.Type.(*ast.Ident)
 					switch ident.Name {
-					case "int":
-						apiPar.Type = api.TInt
+					//case "int":
+					//	apiPar.Type = api.TInt
 					case "string":
 						apiPar.Type = api.TString
 					case "bool":
