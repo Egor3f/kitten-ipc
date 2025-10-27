@@ -27,7 +27,7 @@ declare abstract class IPCCommon {
     protected conn: net.Socket | null;
     protected nextId: number;
     protected pendingCalls: Record<number, (result: CallResult) => void>;
-    protected closeRequested: boolean;
+    protected stopRequested: boolean;
     protected processingCalls: number;
     protected onError?: (err: Error) => void;
     protected onClose?: () => void;

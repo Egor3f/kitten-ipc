@@ -3,6 +3,7 @@ package kittenipc
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -12,6 +13,8 @@ import (
 	"reflect"
 	"slices"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/samber/mo"
@@ -44,13 +47,15 @@ type Callable interface {
 }
 
 type ipcCommon struct {
-	localApi     any
-	socketPath   string
-	conn         net.Conn
-	errCh        chan error
-	nextId       int64
-	pendingCalls map[int64]chan mo.Result[Vals]
-	mu           sync.Mutex
+	localApi        any
+	socketPath      string
+	conn            net.Conn
+	errCh           chan error
+	nextId          int64
+	pendingCalls    map[int64]chan mo.Result[Vals]
+	processingCalls atomic.Int64
+	stopRequested   atomic.Bool
+	mu              sync.Mutex
 }
 
 func (ipc *ipcCommon) readConn() {
@@ -94,6 +99,12 @@ func (ipc *ipcCommon) sendMsg(msg Message) error {
 }
 
 func (ipc *ipcCommon) handleCall(msg Message) {
+	if ipc.stopRequested.Load() {
+		return
+	}
+
+	ipc.processingCalls.Add(1)
+	defer ipc.processingCalls.Add(-1)
 
 	if ipc.localApi == nil {
 		ipc.sendResponse(msg.Id, nil, fmt.Errorf("remote side does not accept ipc calls"))
@@ -171,6 +182,10 @@ func (ipc *ipcCommon) handleResponse(msg Message) {
 }
 
 func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
+	if ipc.stopRequested.Load() {
+		return nil, fmt.Errorf("ipc is stopping")
+	}
+
 	ipc.mu.Lock()
 	id := ipc.nextId
 	ipc.nextId++
@@ -203,7 +218,7 @@ func (ipc *ipcCommon) raiseErr(err error) {
 	}
 }
 
-func (ipc *ipcCommon) cleanup() {
+func (ipc *ipcCommon) closeConn() {
 	ipc.mu.Lock()
 	defer ipc.mu.Unlock()
 	_ = ipc.conn.Close()
@@ -288,6 +303,20 @@ func (p *ParentIPC) acceptConn() error {
 	return nil
 }
 
+func (p *ParentIPC) Stop() error {
+	if len(p.pendingCalls) > 0 {
+		return fmt.Errorf("there are calls pending")
+	}
+	if p.processingCalls.Load() > 0 {
+		return fmt.Errorf("there are calls processing")
+	}
+	p.stopRequested.Store(true)
+	if err := p.cmd.Process.Signal(syscall.SIGINT); err != nil {
+		return fmt.Errorf("send SIGTERM: %w", err)
+	}
+	return p.Wait()
+}
+
 func (p *ParentIPC) Wait() error {
 	waitErrCh := make(chan error, 1)
 
@@ -301,11 +330,21 @@ func (p *ParentIPC) Wait() error {
 		retErr = fmt.Errorf("ipc internal error: %w", err)
 	case err := <-waitErrCh:
 		if err != nil {
-			retErr = fmt.Errorf("cmd wait: %w", err)
+			var exitErr *exec.ExitError
+			if ok := errors.As(err, &exitErr); ok {
+				if !exitErr.Success() {
+					ws, ok := exitErr.Sys().(syscall.WaitStatus)
+					if !(ok && ws.Signaled() && ws.Signal() == syscall.SIGINT && p.stopRequested.Load()) {
+						retErr = fmt.Errorf("cmd wait: %w", err)
+					}
+				}
+			} else {
+				retErr = fmt.Errorf("cmd wait: %w", err)
+			}
 		}
 	}
 
-	p.cleanup()
+	p.closeConn()
 
 	return retErr
 }

@@ -42,7 +42,7 @@ abstract class IPCCommon {
     protected conn: net.Socket | null = null;
     protected nextId: number = 0;
     protected pendingCalls: Record<number, (result: CallResult) => void> = {};
-    protected closeRequested: boolean = false;
+    protected stopRequested: boolean = false;
     protected processingCalls: number = 0;
     protected onError?: (err: Error) => void;
     protected onClose?: () => void;
@@ -155,7 +155,7 @@ abstract class IPCCommon {
             this.processingCalls--;
         }
 
-        if(this.closeRequested) {
+        if(this.stopRequested) {
             if(this.onClose) this.onClose();
         }
     }
@@ -174,13 +174,13 @@ abstract class IPCCommon {
     }
 
     stop() {
-        if (this.closeRequested) {
+        if (this.stopRequested) {
             throw new Error('close already requested');
         }
         if(!this.conn || this.conn.readyState === "closed") {
             throw new Error('connection already closed');
         }
-        this.closeRequested = true;
+        this.stopRequested = true;
         if(this.onClose) this.onClose();
     }
 
