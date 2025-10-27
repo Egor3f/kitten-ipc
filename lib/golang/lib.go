@@ -1,6 +1,7 @@
 package kittenipc
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
