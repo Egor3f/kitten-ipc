@@ -86,16 +86,14 @@ func apiParserByPath(src string) (ApiParser, error) {
 			p, err := apiParserByFilePath(i.Name())
 			if err == nil {
 				if parser != nil {
-					if path.Ext(i.Name()) == ext {
-						parser.AddFile(curPath)
-						return nil
+					if path.Ext(i.Name()) != ext {
+						return fmt.Errorf("path contain multiple supported filetypes")
 					}
-					return fmt.Errorf("path contain multiple supported filetypes")
 				} else {
-					ext = path.Ext(i.Name())
 					parser = p
-					parser.AddFile(curPath)
+					ext = path.Ext(i.Name())
 				}
+				parser.AddFile(curPath)
 			}
 
 			return nil
