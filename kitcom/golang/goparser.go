@@ -13,11 +13,34 @@ import (
 var decorComment = regexp.MustCompile(`^//\s?kittenipc:api$`)
 
 type GoApiParser struct {
+	files []string
 }
 
-func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
+func (g *GoApiParser) AddFile(path string) {
+	g.files = append(g.files, path)
+}
+
+func (g *GoApiParser) Parse() (*api.Api, error) {
 
 	var apis api.Api
+
+	for _, f := range g.files {
+		endpoints, err := g.parseFile(f)
+		if err != nil {
+			return nil, fmt.Errorf("parse file: %w", err)
+		}
+		apis.Endpoints = append(apis.Endpoints, endpoints...)
+	}
+
+	if len(apis.Endpoints) == 0 {
+		return nil, fmt.Errorf("no endpoints found")
+	}
+
+	return &apis, nil
+}
+
+func (g *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
+	var endpoints []api.Endpoint
 
 	fileSet := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileSet, sourceFile, nil, parser.ParseComments|parser.SkipObjectResolution)
@@ -52,13 +75,13 @@ func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 			continue
 		}
 
-		apis.Endpoints = append(apis.Endpoints, api.Endpoint{
+		endpoints = append(endpoints, api.Endpoint{
 			Name: typeSpec.Name.Name,
 		})
 	}
 
-	if len(apis.Endpoints) == 0 {
-		return nil, fmt.Errorf("no api struct found")
+	if len(endpoints) == 0 {
+		return nil, nil
 	}
 
 	for _, decl := range astFile.Decls {
@@ -88,7 +111,7 @@ func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 			continue
 		}
 
-		for i, endpoint := range apis.Endpoints {
+		for i, endpoint := range endpoints {
 			if recvIdent.Name == endpoint.Name {
 				var apiMethod api.Method
 				apiMethod.Name = funcDecl.Name.Name
@@ -96,8 +119,8 @@ func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 					var apiPar api.Val
 					ident := param.Type.(*ast.Ident)
 					switch ident.Name {
-					//case "int":
-					//	apiPar.Type = api.TInt
+					case "int":
+						apiPar.Type = api.TInt
 					case "string":
 						apiPar.Type = api.TString
 					case "bool":
@@ -132,10 +155,9 @@ func (g *GoApiParser) Parse(sourceFile string) (*api.Api, error) {
 					}
 					apiMethod.Ret = append(apiMethod.Ret, apiRet)
 				}
-				apis.Endpoints[i].Methods = append(apis.Endpoints[i].Methods, apiMethod)
+				endpoints[i].Methods = append(endpoints[i].Methods, apiMethod)
 			}
 		}
 	}
-
-	return &apis, nil
+	return endpoints, nil
 }

@@ -17,9 +17,34 @@ const TagName = "kittenipc"
 const TagComment = "api"
 
 type TypescriptApiParser struct {
+	files []string
 }
 
-func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
+func (t *TypescriptApiParser) AddFile(path string) {
+	t.files = append(t.files, path)
+}
+
+func (t *TypescriptApiParser) Parse() (*api.Api, error) {
+
+	var apis api.Api
+
+	for _, f := range t.files {
+		endpoints, err := t.parseFile(f)
+		if err != nil {
+			return nil, fmt.Errorf("parse file: %w", err)
+		}
+		apis.Endpoints = append(apis.Endpoints, endpoints...)
+	}
+
+	if len(apis.Endpoints) == 0 {
+		return nil, fmt.Errorf("no endpoints found")
+	}
+
+	return &apis, nil
+}
+
+func (t *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, error) {
+	var endpoints []api.Endpoint
 
 	f, err := os.Open(sourceFilePath)
 	if err != nil {
@@ -40,8 +65,6 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 		JSDocParsingMode:               ast.JSDocParsingModeParseAll,
 	}, string(fileContents), core.ScriptKindTS)
 	_ = sourceFile
-
-	var apis api.Api
 
 	sourceFile.ForEachChild(func(node *ast.Node) bool {
 		if node.Kind != ast.KindClassDeclaration {
@@ -107,8 +130,8 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 			if method.Type != nil {
 				var apiRet api.Val
 				switch method.Type.Kind {
-				//case ast.KindNumberKeyword:
-				//	apiRet.Type = api.TInt
+				case ast.KindNumberKeyword:
+					apiRet.Type = api.TInt
 				case ast.KindStringKeyword:
 					apiRet.Type = api.TString
 				case ast.KindBooleanKeyword:
@@ -122,7 +145,7 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 			endpoint.Methods = append(endpoint.Methods, apiMethod)
 		}
 
-		apis.Endpoints = append(apis.Endpoints, endpoint)
+		endpoints = append(endpoints, endpoint)
 
 		return false
 	})
@@ -131,9 +154,5 @@ func (t *TypescriptApiParser) Parse(sourceFilePath string) (*api.Api, error) {
 		return nil, err
 	}
 
-	if len(apis.Endpoints) == 0 {
-		return nil, fmt.Errorf("no api class found")
-	}
-
-	return &apis, nil
+	return endpoints, nil
 }

@@ -7,12 +7,8 @@ import (
 	"fmt"
 )
 
-type callable interface {
-	Call(method string, params ...any) (kittenipc.Vals, error)
-}
-
 type TsIpcApi struct {
-	Ipc callable
+	Ipc kittenipc.Callable
 }
 
 func (t *TsIpcApi) Div(
@@ -20,9 +16,10 @@ func (t *TsIpcApi) Div(
 ) (
 	int, error,
 ) {
-	results, err := t.Ipc.Call("TsIpcApi", "Div", a, b)
+	results, err := t.Ipc.Call("TsIpcApi.Div", a, b)
 	if err != nil {
 		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
 	}
+	_ = results
 	return results[0].(int), nil
 }

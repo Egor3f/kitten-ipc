@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"go/token"
+	"io/fs"
 	"log"
 	"os"
 	"path"
@@ -15,7 +16,8 @@ import (
 )
 
 type ApiParser interface {
-	Parse(sourceFile string) (*api.Api, error)
+	AddFile(path string)
+	Parse() (*api.Api, error)
 }
 
 type ApiGenerator interface {
@@ -23,13 +25,7 @@ type ApiGenerator interface {
 }
 
 func main() {
-	// todo support go:generate
-	//goFile := os.Getenv("GOFILE")
-	//if goFile == "" {
-	//	log.Panic("GOFILE must be set")
-	//}
-
-	src := flag.String("src", "", "Source file")
+	src := flag.String("src", "", "Source file/dir")
 	dest := flag.String("dest", "", "Dest file")
 	pkgName := flag.String("pkgname", "", "Package name (for go)")
 	flag.Parse()
@@ -48,42 +44,79 @@ func main() {
 		log.Panic(err)
 	}
 
-	if err := checkIsFile(srcAbs); err != nil {
-		log.Panic(err)
-	}
-
-	apiParser, err := apiParserByExt(srcAbs)
+	apiParser, err := apiParserByPath(srcAbs)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	api, err := apiParser.Parse(srcAbs)
+	apis, err := apiParser.Parse()
 	if err != nil {
 		log.Panic(err)
 	}
 
-	apiGenerator, err := apiGeneratorByExt(destAbs, *pkgName)
+	apiGenerator, err := apiGeneratorByPath(destAbs, *pkgName)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	if err := apiGenerator.Generate(api, destAbs); err != nil {
+	if err := apiGenerator.Generate(apis, destAbs); err != nil {
 		log.Panic(err)
 	}
 }
 
-func checkIsFile(src string) error {
-	info, err := os.Stat(src)
+func apiParserByPath(src string) (ApiParser, error) {
+
+	s, err := os.Stat(src)
 	if err != nil {
-		return fmt.Errorf("stat file: %w", err)
+		return nil, fmt.Errorf("stat src: %w", err)
 	}
-	if info.IsDir() {
-		return fmt.Errorf("%s is a directory; directories are not supported yet", src)
+
+	var parser ApiParser
+	var ext string
+
+	if s.IsDir() {
+		if err := filepath.Walk(src, func(curPath string, i fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if i.IsDir() {
+				return nil
+			}
+
+			p, err := apiParserByFilePath(i.Name())
+			if err == nil {
+				if parser != nil {
+					if path.Ext(i.Name()) == ext {
+						parser.AddFile(curPath)
+						return nil
+					}
+					return fmt.Errorf("path contain multiple supported filetypes")
+				} else {
+					ext = path.Ext(i.Name())
+					parser = p
+					parser.AddFile(curPath)
+				}
+			}
+
+			return nil
+		}); err != nil {
+			return nil, fmt.Errorf("walk dir: %w", err)
+		}
+	} else {
+		parser, err = apiParserByFilePath(src)
+		if err != nil {
+			return nil, err
+		}
+		parser.AddFile(src)
 	}
-	return nil
+
+	if parser == nil {
+		return nil, fmt.Errorf("could not find supported files in %s", src)
+	}
+	return parser, nil
 }
 
-func apiParserByExt(src string) (ApiParser, error) {
+func apiParserByFilePath(src string) (ApiParser, error) {
 	switch path.Ext(src) {
 	case ".go":
 		return &golang.GoApiParser{}, nil
@@ -98,7 +131,7 @@ func apiParserByExt(src string) (ApiParser, error) {
 	}
 }
 
-func apiGeneratorByExt(dest string, pkgName string) (ApiGenerator, error) {
+func apiGeneratorByPath(dest string, pkgName string) (ApiGenerator, error) {
 	switch path.Ext(dest) {
 	case ".go":
 		if pkgName == "" {
