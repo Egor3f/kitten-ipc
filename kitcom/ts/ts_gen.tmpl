@@ -5,7 +5,7 @@ import {ParentIPC, ChildIPC} from 'kitten-ipc';
 {{- /*gotype: efprojects.com/kitten-ipc/kitcom/ts.tsGenData*/ -}}
 {{range $e := .Api.Endpoints}}
 export default class {{$e.Name}} {
-    private ipc: ParentIPC | ChildIPC;
+    protected ipc: ParentIPC | ChildIPC;
 
     constructor(ipc: ParentIPC | ChildIPC) {
         this.ipc = ipc;

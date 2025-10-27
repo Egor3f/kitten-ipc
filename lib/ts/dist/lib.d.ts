@@ -1,5 +1,4 @@
 import * as net from 'node:net';
-import { QueuedEvent } from 'ts-events';
 declare enum MsgType {
     Call = 1,
     Response = 2
@@ -28,15 +27,19 @@ declare abstract class IPCCommon {
     protected conn: net.Socket | null;
     protected nextId: number;
     protected pendingCalls: Record<number, (result: CallResult) => void>;
-    protected errors: QueuedEvent<Error>;
+    protected closeRequested: boolean;
+    protected processingCalls: number;
+    protected onError?: (err: Error) => void;
+    protected onClose?: () => void;
     protected constructor(localApis: object[], socketPath: string);
     protected readConn(): void;
     protected processMsg(msg: Message): void;
-    protected handleCall(msg: CallMessage): void;
     protected sendMsg(msg: Message): void;
+    protected handleCall(msg: CallMessage): void;
     protected handleResponse(msg: ResponseMessage): void;
-    protected raiseErr(err: Error): void;
+    stop(): void;
     call(method: string, ...params: Vals): Promise<Vals>;
+    protected raiseErr(err: Error): void;
 }
 export declare class ParentIPC extends IPCCommon {
     private readonly cmdPath;

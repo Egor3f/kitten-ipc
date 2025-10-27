@@ -306,11 +306,11 @@ func (p *ParentIPC) Wait() (retErr error) {
 	case err := <-p.errCh:
 		retErr = fmt.Errorf("ipc internal error: %w", err)
 	case err := <-waitErrCh:
-		retErr = fmt.Errorf("cmd wait: %w", err)
+		if err != nil {
+			retErr = fmt.Errorf("cmd wait: %w", err)
+		}
 	}
 
-	killErr := p.cmd.Process.Kill()
-	retErr = mergeErr(retErr, killErr)
 	p.cleanup()
 
 	return

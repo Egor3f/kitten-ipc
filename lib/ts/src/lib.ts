@@ -5,7 +5,6 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as util from 'node:util';
-import {QueuedEvent} from 'ts-events';
 
 const IPC_SOCKET_ARG = 'ipc-socket';
 
@@ -43,11 +42,13 @@ abstract class IPCCommon {
     protected conn: net.Socket | null = null;
     protected nextId: number = 0;
     protected pendingCalls: Record<number, (result: CallResult) => void> = {};
-    protected errors: QueuedEvent<Error>;
+    protected closeRequested: boolean = false;
+    protected processingCalls: number = 0;
+    protected onError?: (err: Error) => void;
+    protected onClose?: () => void;
 
     protected constructor(localApis: object[], socketPath: string) {
         this.socketPath = socketPath;
-        this.errors = new QueuedEvent();
 
         this.localApis = {};
         for (const localApi of localApis) {
@@ -63,6 +64,16 @@ abstract class IPCCommon {
             crlfDelay: Infinity,
         });
 
+        this.conn.on('error', (e) => {
+            this.raiseErr(e);
+        })
+
+        this.conn.on('close', (hadError: boolean) => {
+            if (hadError) {
+                this.raiseErr(new Error('connection closed due to error'));
+            }
+        })
+
         rl.on('line', (line) => {
             try {
                 const msg: Message = JSON.parse(line);
@@ -70,14 +81,6 @@ abstract class IPCCommon {
             } catch (e) {
                 this.raiseErr(new Error(`${e}`));
             }
-        });
-
-        rl.on('error', (e) => {
-            this.raiseErr(e);
-        });
-
-        rl.on('close', () => {
-            this.raiseErr(new Error('connection closed'));
         });
     }
 
@@ -89,6 +92,17 @@ abstract class IPCCommon {
             case MsgType.Response:
                 this.handleResponse(msg);
                 break;
+        }
+    }
+
+    protected sendMsg(msg: Message): void {
+        if (!this.conn) throw new Error('no connection');
+
+        try {
+            const data = JSON.stringify(msg) + '\n';
+            this.conn.write(data);
+        } catch (e) {
+            this.raiseErr(new Error(`send response for ${msg.id}: ${e}`));
         }
     }
 
@@ -120,7 +134,9 @@ abstract class IPCCommon {
         }
 
         try {
-            const result = method.apply(this.localApis, msg.params);
+            this.processingCalls++;
+
+            const result = method.apply(endpoint, msg.params);
 
             if (result instanceof Promise) {
                 result
@@ -135,17 +151,12 @@ abstract class IPCCommon {
             }
         } catch (err) {
             this.sendMsg({type: MsgType.Response, id: msg.id, error: `${err}`});
+        } finally {
+            this.processingCalls--;
         }
-    }
 
-    protected sendMsg(msg: Message): void {
-        if (!this.conn) throw new Error('no connection');
-
-        try {
-            const data = JSON.stringify(msg) + '\n';
-            this.conn.write(data);
-        } catch (e) {
-            this.raiseErr(new Error(`send response for ${msg.id}: ${e}`));
+        if(this.closeRequested) {
+            if(this.onClose) this.onClose();
         }
     }
 
@@ -162,8 +173,15 @@ abstract class IPCCommon {
         callback({ result: msg.result || [], error: err });
     }
 
-    protected raiseErr(err: Error): void {
-        this.errors.post(err);
+    stop() {
+        if (this.closeRequested) {
+            throw new Error('close already requested');
+        }
+        if(!this.conn || this.conn.readyState === "closed") {
+            throw new Error('connection already closed');
+        }
+        this.closeRequested = true;
+        if(this.onClose) this.onClose();
     }
 
     call(method: string, ...params: Vals): Promise<Vals> {
@@ -184,6 +202,10 @@ abstract class IPCCommon {
                 reject(new Error(`send call: ${e}`));
             }
         });
+    }
+
+    protected raiseErr(err: Error): void {
+        if(this.onError) this.onError(err);
     }
 }
 
@@ -260,9 +282,9 @@ export class ParentIPC extends IPCCommon {
                     resolve();
                 }
             });
-            this.errors.attach(err => {
+            this.onError = (err) => {
                 reject(err);
-            })
+            }
         })
     }
 }
@@ -285,7 +307,15 @@ export class ChildIPC extends IPCCommon {
 
     async wait(): Promise<void> {
         return new Promise((resolve, reject) => {
-
+            this.onError = (err) => {
+                reject(err);
+            }
+            this.onClose = () => {
+                if (this.processingCalls === 0) {
+                    this.conn?.destroy();
+                    resolve();
+                }
+            }
         });
     }
 }
