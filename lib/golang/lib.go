@@ -288,13 +288,14 @@ func (p *ParentIPC) acceptConn() error {
 	return nil
 }
 
-func (p *ParentIPC) Wait() (retErr error) {
+func (p *ParentIPC) Wait() error {
 	waitErrCh := make(chan error, 1)
 
 	go func() {
 		waitErrCh <- p.cmd.Wait()
 	}()
 
+	var retErr error
 	select {
 	case err := <-p.errCh:
 		retErr = fmt.Errorf("ipc internal error: %w", err)
@@ -306,7 +307,7 @@ func (p *ParentIPC) Wait() (retErr error) {
 
 	p.cleanup()
 
-	return
+	return retErr
 }
 
 type ChildIPC struct {
