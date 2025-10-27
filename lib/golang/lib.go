@@ -53,18 +53,18 @@ type ipcCommon struct {
 }
 
 func (ipc *ipcCommon) readConn() {
-	//scn := bufio.NewScanner(ipc.conn)
-	//for scn.Scan() {
-	//	var msg Message
-	//	if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
-	//		ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
-	//		break
-	//	}
-	//	ipc.processMsg(msg)
-	//}
-	//if err := scn.Err(); err != nil {
-	//	ipc.raiseErr(err)
-	//}
+	scn := bufio.NewScanner(ipc.conn)
+	for scn.Scan() {
+		var msg Message
+		if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
+			ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
+			break
+		}
+		ipc.processMsg(msg)
+	}
+	if err := scn.Err(); err != nil {
+		ipc.raiseErr(err)
+	}
 }
 
 func (ipc *ipcCommon) processMsg(msg Message) {
