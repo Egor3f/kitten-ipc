@@ -82,6 +82,9 @@ func (t *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 	outer:
 		for _, jsDocNode := range jsDocNodes {
 			jsDoc := jsDocNode.AsJSDoc()
+			if jsDoc.Tags == nil {
+				continue
+			}
 			for _, tag := range jsDoc.Tags.Nodes {
 				if tag.TagName().Text() == TagName {
 					for _, com := range tag.Comments() {
