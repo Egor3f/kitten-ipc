@@ -111,6 +111,10 @@ func (t *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 			}
 
 			method := member.AsMethodDeclaration()
+			if method.ModifierFlags()&ast.ModifierFlagsPrivate > 0 || method.ModifierFlags()&ast.ModifierFlagsProtected > 0 {
+				continue
+			}
+
 			var apiMethod api.Method
 			apiMethod.Name = method.Name().Text()
 			for _, parNode := range method.ParameterList().Nodes {
