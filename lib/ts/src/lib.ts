@@ -66,20 +66,20 @@ abstract class IPCCommon {
 
         this.conn.on('error', (e) => {
             this.raiseErr(e);
-        })
+        });
 
         this.conn.on('close', (hadError: boolean) => {
             if (hadError) {
                 this.raiseErr(new Error('connection closed due to error'));
             }
-        })
+        });
 
         rl.on('line', (line) => {
             try {
                 const msg: Message = JSON.parse(line);
                 this.processMsg(msg);
             } catch (e) {
-                this.raiseErr(new Error(`${e}`));
+                this.raiseErr(new Error(`${ e }`));
             }
         });
     }
@@ -102,24 +102,24 @@ abstract class IPCCommon {
             const data = JSON.stringify(msg) + '\n';
             this.conn.write(data);
         } catch (e) {
-            this.raiseErr(new Error(`send response for ${msg.id}: ${e}`));
+            this.raiseErr(new Error(`send response for ${ msg.id }: ${ e }`));
         }
     }
 
-    protected handleCall(msg: CallMessage): void {
+    protected async handleCall(msg: CallMessage) {
         const [endpointName, methodName] = msg.method.split('.');
-        if(!endpointName || !methodName) {
-            this.sendMsg({type: MsgType.Response, id: msg.id, error: `call malformed: ${msg.method}`});
+        if (!endpointName || !methodName) {
+            this.sendMsg({type: MsgType.Response, id: msg.id, error: `call malformed: ${ msg.method }`});
             return;
         }
         const endpoint = this.localApis[endpointName];
-        if(!endpoint) {
-            this.sendMsg({type: MsgType.Response, id: msg.id, error: `endpoint not found: ${endpointName}`});
+        if (!endpoint) {
+            this.sendMsg({type: MsgType.Response, id: msg.id, error: `endpoint not found: ${ endpointName }`});
             return;
         }
         const method = endpoint[methodName];
         if (!method || typeof method !== 'function') {
-            this.sendMsg({type: MsgType.Response, id: msg.id, error: `method not found: ${msg.method}`});
+            this.sendMsg({type: MsgType.Response, id: msg.id, error: `method not found: ${ msg.method }`});
             return;
         }
 
@@ -128,60 +128,51 @@ abstract class IPCCommon {
             this.sendMsg({
                 type: MsgType.Response,
                 id: msg.id,
-                error: `argument count mismatch: expected ${argsCount}, got ${msg.params.length}`
+                error: `argument count mismatch: expected ${ argsCount }, got ${ msg.params.length }`
             });
             return;
         }
 
         try {
             this.processingCalls++;
-
-            const result = method.apply(endpoint, msg.params);
-
+            let result = method.apply(endpoint, msg.params);
             if (result instanceof Promise) {
-                result
-                    .then((res) => {
-                        this.sendMsg({type: MsgType.Response, id: msg.id, result: [res]});
-                    })
-                    .catch((err) => {
-                        this.sendMsg({type: MsgType.Response, id: msg.id, error: `${err}`});
-                    });
-            } else {
-                this.sendMsg({type: MsgType.Response, id: msg.id, result: [result]});
+                result = await result;
             }
+            this.sendMsg({type: MsgType.Response, id: msg.id, result: [result]});
         } catch (err) {
-            this.sendMsg({type: MsgType.Response, id: msg.id, error: `${err}`});
+            this.sendMsg({type: MsgType.Response, id: msg.id, error: `${ err }`});
         } finally {
             this.processingCalls--;
         }
 
-        if(this.stopRequested) {
-            if(this.onClose) this.onClose();
+        if (this.stopRequested) {
+            if (this.onClose) this.onClose();
         }
     }
 
     protected handleResponse(msg: ResponseMessage): void {
         const callback = this.pendingCalls[msg.id];
         if (!callback) {
-            this.raiseErr(new Error(`received response for unknown msgId: ${msg.id}`));
+            this.raiseErr(new Error(`received response for unknown msgId: ${ msg.id }`));
             return;
         }
 
         delete this.pendingCalls[msg.id];
 
-        const err = msg.error ? new Error(`remote error: ${msg.error}`) : null;
-        callback({ result: msg.result || [], error: err });
+        const err = msg.error ? new Error(`remote error: ${ msg.error }`) : null;
+        callback({result: msg.result || [], error: err});
     }
 
     stop() {
         if (this.stopRequested) {
             throw new Error('close already requested');
         }
-        if(!this.conn || this.conn.readyState === "closed") {
+        if (!this.conn || this.conn.readyState === 'closed') {
             throw new Error('connection already closed');
         }
         this.stopRequested = true;
-        if(this.onClose) this.onClose();
+        if (this.onClose) this.onClose();
     }
 
     call(method: string, ...params: Vals): Promise<Vals> {
@@ -199,13 +190,13 @@ abstract class IPCCommon {
                 this.sendMsg({type: MsgType.Call, id, method, params});
             } catch (e) {
                 delete this.pendingCalls[id];
-                reject(new Error(`send call: ${e}`));
+                reject(new Error(`send call: ${ e }`));
             }
         });
     }
 
     protected raiseErr(err: Error): void {
-        if(this.onError) this.onError(err);
+        if (this.onError) this.onError(err);
     }
 }
 
@@ -217,12 +208,12 @@ export class ParentIPC extends IPCCommon {
     private readonly listener: net.Server;
 
     constructor(cmdPath: string, cmdArgs: string[], ...localApis: object[]) {
-        const socketPath = path.join(os.tmpdir(), `kitten-ipc-${process.pid}.sock`);
+        const socketPath = path.join(os.tmpdir(), `kitten-ipc-${ process.pid }.sock`);
         super(localApis, socketPath);
 
         this.cmdPath = cmdPath;
-        if (cmdArgs.includes(`--${IPC_SOCKET_ARG}`)) {
-            throw new Error(`you should not use '--${IPC_SOCKET_ARG}' argument in your command`);
+        if (cmdArgs.includes(`--${ IPC_SOCKET_ARG }`)) {
+            throw new Error(`you should not use '--${ IPC_SOCKET_ARG }' argument in your command`);
         }
         this.cmdArgs = cmdArgs;
 
@@ -232,7 +223,8 @@ export class ParentIPC extends IPCCommon {
     async start(): Promise<void> {
         try {
             fs.unlinkSync(this.socketPath);
-        } catch {}
+        } catch {
+        }
 
 
         await new Promise<void>((resolve, reject) => {
@@ -242,7 +234,7 @@ export class ParentIPC extends IPCCommon {
             this.listener.on('error', reject);
         });
 
-        const cmdArgs = [...this.cmdArgs, `--${IPC_SOCKET_ARG}`, this.socketPath];
+        const cmdArgs = [...this.cmdArgs, `--${ IPC_SOCKET_ARG }`, this.socketPath];
         this.cmd = spawn(this.cmdPath, cmdArgs, {stdio: 'inherit'});
 
         this.cmd.on('error', (err) => {
@@ -273,19 +265,19 @@ export class ParentIPC extends IPCCommon {
 
     async wait(): Promise<void> {
         return new Promise((resolve, reject) => {
-            if(!this.cmd) throw new Error('Command is not started yet');
+            if (!this.cmd) throw new Error('Command is not started yet');
             this.cmd.addListener('close', (code, signal) => {
-                if(signal || code) {
-                    if(signal) reject(new Error(`Process exited with signal ${signal}`));
-                    else reject(new Error(`Process exited with code ${code}`));
+                if (signal || code) {
+                    if (signal) reject(new Error(`Process exited with signal ${ signal }`));
+                    else reject(new Error(`Process exited with code ${ code }`));
                 } else {
                     resolve();
                 }
             });
             this.onError = (err) => {
                 reject(err);
-            }
-        })
+            };
+        });
     }
 }
 
@@ -309,13 +301,13 @@ export class ChildIPC extends IPCCommon {
         return new Promise((resolve, reject) => {
             this.onError = (err) => {
                 reject(err);
-            }
+            };
             this.onClose = () => {
                 if (this.processingCalls === 0) {
                     this.conn?.destroy();
                     resolve();
                 }
-            }
+            };
         });
     }
 }

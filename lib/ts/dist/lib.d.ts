@@ -35,7 +35,7 @@ declare abstract class IPCCommon {
     protected readConn(): void;
     protected processMsg(msg: Message): void;
     protected sendMsg(msg: Message): void;
-    protected handleCall(msg: CallMessage): void;
+    protected handleCall(msg: CallMessage): Promise<void>;
     protected handleResponse(msg: ResponseMessage): void;
     stop(): void;
     call(method: string, ...params: Vals): Promise<Vals>;
