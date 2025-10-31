@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -47,7 +48,7 @@ type Callable interface {
 }
 
 type ipcCommon struct {
-	localApi        any
+	localApis       map[string]any
 	socketPath      string
 	conn            net.Conn
 	errCh           chan error
@@ -106,20 +107,26 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	ipc.processingCalls.Add(1)
 	defer ipc.processingCalls.Add(-1)
 
-	if ipc.localApi == nil {
-		ipc.sendResponse(msg.Id, nil, fmt.Errorf("remote side does not accept ipc calls"))
+	parts := strings.Split(msg.Method, ".")
+	if len(parts) != 2 {
+		ipc.sendResponse(msg.Id, nil, fmt.Errorf("invalid method: %s", msg.Method))
+		return
 	}
-	localApi := reflect.ValueOf(ipc.localApi)
+	endpointName, methodName := parts[0], parts[1]
 
-	method := localApi.MethodByName(msg.Method)
+	localApi, ok := ipc.localApis[endpointName]
+	if !ok {
+		ipc.sendResponse(msg.Id, nil, fmt.Errorf("endpoint not found: %s", endpointName))
+		return
+	}
+
+	method := reflect.ValueOf(localApi).MethodByName(methodName)
 	if !method.IsValid() {
 		ipc.sendResponse(msg.Id, nil, fmt.Errorf("method not found: %s", msg.Method))
 		return
 	}
 
-	methodType := method.Type()
-	argsCount := methodType.NumIn()
-
+	argsCount := method.Type().NumIn()
 	if len(msg.Params) != argsCount {
 		ipc.sendResponse(msg.Id, nil, fmt.Errorf("argument count mismatch: expected %d, got %d", argsCount, len(msg.Params)))
 		return
@@ -132,14 +139,19 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 
 	results := method.Call(args)
 	resVals := results[0 : len(results)-1]
-	resErr := results[len(results)-1]
+	resErrVal := results[len(results)-1]
 
 	var res []any
 	for _, resVal := range resVals {
-		res = append(res, resVal)
+		res = append(res, resVal.Interface())
 	}
 
-	ipc.sendResponse(msg.Id, res, resErr.Interface().(error))
+	var resErr error
+	if !resErrVal.IsNil() {
+		resErr = resErrVal.Interface().(error)
+	}
+
+	ipc.sendResponse(msg.Id, res, resErr)
 }
 
 func (ipc *ipcCommon) sendResponse(id int64, result []any, err error) {
@@ -233,10 +245,10 @@ type ParentIPC struct {
 	listener net.Listener
 }
 
-func NewParent(cmd *exec.Cmd, localApi any) (*ParentIPC, error) {
+func NewParent(cmd *exec.Cmd, localApis ...any) (*ParentIPC, error) {
 	p := ParentIPC{
 		ipcCommon: &ipcCommon{
-			localApi:     localApi,
+			localApis:    mapTypeNames(localApis),
 			pendingCalls: make(map[int64]chan mo.Result[Vals]),
 			errCh:        make(chan error, 1),
 			socketPath:   filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d.sock", os.Getpid())),
@@ -353,10 +365,10 @@ type ChildIPC struct {
 	*ipcCommon
 }
 
-func NewChild(localApi any) (*ChildIPC, error) {
+func NewChild(localApis ...any) (*ChildIPC, error) {
 	c := ChildIPC{
 		ipcCommon: &ipcCommon{
-			localApi:     localApi,
+			localApis:    mapTypeNames(localApis),
 			pendingCalls: make(map[int64]chan mo.Result[Vals]),
 			errCh:        make(chan error, 1),
 		},
@@ -402,4 +414,13 @@ func mergeErr(errs ...error) (ret error) {
 		}
 	}
 	return
+}
+
+func mapTypeNames(types []any) map[string]any {
+	result := make(map[string]any)
+	for _, t := range types {
+		typeName := reflect.TypeOf(t).Elem().Name()
+		result[typeName] = t
+	}
+	return result
 }
