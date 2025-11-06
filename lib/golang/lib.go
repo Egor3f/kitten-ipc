@@ -22,6 +22,7 @@ import (
 )
 
 const ipcSocketArg = "--ipc-socket"
+const maxMessageLength = 1 * 1024 * 1024 * 1024 // 1 gigabyte
 
 type StdioMode int
 
@@ -61,6 +62,7 @@ type ipcCommon struct {
 
 func (ipc *ipcCommon) readConn() {
 	scn := bufio.NewScanner(ipc.conn)
+	scn.Buffer(nil, maxMessageLength)
 	for scn.Scan() {
 		var msg Message
 		if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
