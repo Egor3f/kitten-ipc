@@ -31,42 +31,41 @@ func main() {
 	flag.Parse()
 
 	if *src == "" || *dest == "" {
-		log.Panic("source and destination must be set")
+		log.Fatalln("source and destination must be set")
 	}
 
 	srcAbs, err := filepath.Abs(*src)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalln(err)
 	}
 
 	destAbs, err := filepath.Abs(*dest)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalln(err)
 	}
 
 	apiParser, err := apiParserByPath(srcAbs)
 	if err != nil {
-		log.Panic(err)
-	}
-
-	apis, err := apiParser.Parse()
-	if err != nil {
-		log.Panic(err)
+		log.Fatalln(err)
 	}
 
 	apiGenerator, err := apiGeneratorByPath(destAbs, *pkgName)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalln(err)
+	}
+
+	apis, err := apiParser.Parse()
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	if err := apiGenerator.Generate(apis, destAbs); err != nil {
-		log.Panic(err)
+		log.Fatalln(err)
 	}
 }
 
 func apiParserByPath(src string) (ApiParser, error) {
-
-	s, err := os.Stat(src)
+	pathFI, err := os.Stat(src)
 	if err != nil {
 		return nil, fmt.Errorf("stat src: %w", err)
 	}
@@ -74,21 +73,21 @@ func apiParserByPath(src string) (ApiParser, error) {
 	var parser ApiParser
 	var ext string
 
-	if s.IsDir() {
-		if err := filepath.Walk(src, func(curPath string, i fs.FileInfo, err error) error {
+	if pathFI.IsDir() {
+		if err := filepath.Walk(src, func(curPath string, fileinfo fs.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			if i.IsDir() {
+			if fileinfo.IsDir() {
 				return nil
 			}
 
-			p, err := apiParserByFilePath(i.Name())
+			p, err := apiParserByFilePath(fileinfo.Name())
 			if err == nil {
 				if parser == nil {
 					parser = p
-					ext = path.Ext(i.Name())
-				} else if path.Ext(i.Name()) != ext {
+					ext = path.Ext(fileinfo.Name())
+				} else if path.Ext(fileinfo.Name()) != ext {
 					return fmt.Errorf("path contain multiple supported filetypes")
 				}
 				parser.AddFile(curPath)
