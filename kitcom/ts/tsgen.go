@@ -12,7 +12,7 @@ import (
 	_ "embed"
 )
 
-//go:embed ts_gen.tmpl
+//go:embed tsgen.tmpl
 var templateString string
 
 type tsGenData struct {
