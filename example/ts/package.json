@@ -1,0 +1,12 @@
+{
+  "name": "kitten-ipc-example",
+  "version": "1.0.0",
+  "author": "Egor3f <ef@efprojects.com>",
+  "license": "Apache 2.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  }
+}

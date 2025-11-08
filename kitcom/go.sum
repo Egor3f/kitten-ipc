@@ -1,0 +1,6 @@
+github.com/go-json-experiment/json v0.0.0-20250910080747-cc2cfa0554c3 h1:02WINGfSX5w0Mn+F28UyRoSt9uvMhKguwWMlOAh6U/0=
+github.com/go-json-experiment/json v0.0.0-20250910080747-cc2cfa0554c3/go.mod h1:uNVvRXArCGbZ508SxYYTC5v1JWoz2voff5pm25jU1Ok=
+golang.org/x/sync v0.17.0 h1:l60nONMj9l5drqw6jlhIELNv9I0A4OFgRsG9k2oT9Ug=
+golang.org/x/sync v0.17.0/go.mod h1:9KTHXmSnoGruLpwFjVSX0lNNA75CykiMECbovNTZqGI=
+golang.org/x/text v0.29.0 h1:1neNs90w9YzJ9BocxfsQNHKuAT4pkghyXc4nhZ6sJvk=
+golang.org/x/text v0.29.0/go.mod h1:7MhJOA9CD2qZyOKYazxdYMF85OwPdEr9jTtBpO7ydH4=
