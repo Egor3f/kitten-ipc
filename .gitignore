@@ -3,4 +3,5 @@
 /go.work.sum
 node_modules
 *.js
+*.js.map
 /TODO.md
