@@ -10,9 +10,9 @@ import (
 	"path"
 	"path/filepath"
 
-	"efprojects.com/kitten-ipc/kitcom/api"
-	"efprojects.com/kitten-ipc/kitcom/golang"
-	"efprojects.com/kitten-ipc/kitcom/ts"
+	"efprojects.com/kitten-ipc/kitcom/internal/api"
+	"efprojects.com/kitten-ipc/kitcom/internal/golang"
+	"efprojects.com/kitten-ipc/kitcom/internal/ts"
 )
 
 type ApiParser interface {
