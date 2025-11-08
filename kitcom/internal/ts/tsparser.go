@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"efprojects.com/kitten-ipc/kitcom/api"
-	"efprojects.com/kitten-ipc/kitcom/common"
+	"efprojects.com/kitten-ipc/kitcom/internal/api"
+	"efprojects.com/kitten-ipc/kitcom/internal/common"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/parser"

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"efprojects.com/kitten-ipc/kitcom/api"
+	"efprojects.com/kitten-ipc/kitcom/internal/api"
 	_ "embed"
 )
 
