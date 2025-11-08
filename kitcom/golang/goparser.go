@@ -17,26 +17,11 @@ type GoApiParser struct {
 	*common.Parser
 }
 
-func (g *GoApiParser) Parse() (*api.Api, error) {
-
-	var apis api.Api
-
-	for _, f := range g.Files {
-		endpoints, err := g.parseFile(f)
-		if err != nil {
-			return nil, fmt.Errorf("parse file: %w", err)
-		}
-		apis.Endpoints = append(apis.Endpoints, endpoints...)
-	}
-
-	if len(apis.Endpoints) == 0 {
-		return nil, fmt.Errorf("no endpoints found")
-	}
-
-	return &apis, nil
+func (p *GoApiParser) Parse() (*api.Api, error) {
+	return p.MapFiles(p.parseFile)
 }
 
-func (g *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
+func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 	var endpoints []api.Endpoint
 
 	fileSet := token.NewFileSet()
