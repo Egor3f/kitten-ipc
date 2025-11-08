@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"efprojects.com/kitten-ipc/kitcom/api"
+	"efprojects.com/kitten-ipc/kitcom/common"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/parser"
@@ -17,18 +18,14 @@ const TagName = "kittenipc"
 const TagComment = "api"
 
 type TypescriptApiParser struct {
-	files []string
-}
-
-func (t *TypescriptApiParser) AddFile(path string) {
-	t.files = append(t.files, path)
+	*common.Parser
 }
 
 func (t *TypescriptApiParser) Parse() (*api.Api, error) {
 
 	var apis api.Api
 
-	for _, f := range t.files {
+	for _, f := range t.Files {
 		endpoints, err := t.parseFile(f)
 		if err != nil {
 			return nil, fmt.Errorf("parse file: %w", err)

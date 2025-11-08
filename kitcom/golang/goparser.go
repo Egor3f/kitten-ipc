@@ -8,23 +8,20 @@ import (
 	"regexp"
 
 	"efprojects.com/kitten-ipc/kitcom/api"
+	"efprojects.com/kitten-ipc/kitcom/common"
 )
 
 var decorComment = regexp.MustCompile(`^//\s?kittenipc:api$`)
 
 type GoApiParser struct {
-	files []string
-}
-
-func (g *GoApiParser) AddFile(path string) {
-	g.files = append(g.files, path)
+	*common.Parser
 }
 
 func (g *GoApiParser) Parse() (*api.Api, error) {
 
 	var apis api.Api
 
-	for _, f := range g.files {
+	for _, f := range g.Files {
 		endpoints, err := g.parseFile(f)
 		if err != nil {
 			return nil, fmt.Errorf("parse file: %w", err)
