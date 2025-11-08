@@ -1,9 +1,9 @@
 # Readme draft
 
-1. write code in language A
+1. write code
 2. annotate it (see below)
 3. launch `kitcom -src path/to/source.A -dest path/to/generated/file.B`
-4. Use generated file to IPC
+4. Use generated file for IPC
 
 ## Typescript:
 
@@ -61,6 +61,10 @@ if err := kit.Wait(); err != nil {
 ```
 
 LocalAPI on one side is RemoteAPI on the other side
+
+## C++, Rust, Python:
+
+To be done
 
 # Library status
 Work in progress. No tests, no docs, code is not finished! Not everything is working yet. Code is partly crap.
