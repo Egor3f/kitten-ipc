@@ -8,8 +8,9 @@ import (
 	"os/exec"
 	"text/template"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/api"
 	_ "embed"
+
+	"efprojects.com/kitten-ipc/kitcom/internal/api"
 )
 
 //go:embed tsgen.tmpl
