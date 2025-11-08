@@ -45,6 +45,7 @@ abstract class IPCCommon {
     protected pendingCalls: Record<number, (result: CallResult) => void> = {};
     protected stopRequested: boolean = false;
     protected processingCalls: number = 0;
+    protected ready = false;
 
     protected errorQueue = new AsyncQueue<Error>();
     protected onClose?: () => void;
@@ -84,6 +85,8 @@ abstract class IPCCommon {
                 this.raiseErr(new Error(`${ e }`));
             }
         });
+
+        this.ready = true;
     }
 
     protected processMsg(msg: Message): void {
@@ -266,11 +269,16 @@ export class ParentIPC extends IPCCommon {
 
     async wait(): Promise<void> {
         return new Promise(async (resolve, reject) => {
-            if (!this.cmd) throw new Error('Command is not started yet');
+            if (!this.cmd) {
+                reject('Command is not started yet');
+                return;
+            }
             this.cmd.addListener('close', (code, signal) => {
                 if (signal || code) {
                     if (signal) reject(new Error(`Process exited with signal ${ signal }`));
                     else reject(new Error(`Process exited with code ${ code }`));
+                } else if(!this.ready) {
+                    reject('command exited before connection established');
                 } else {
                     resolve();
                 }

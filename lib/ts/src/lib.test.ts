@@ -6,3 +6,9 @@ test('test connection timeout', async ({expect}) => {
     await parentIpc.start();
     await expect(parentIpc.wait()).rejects.toThrowError('timed out');
 });
+
+test('test process stop before connection accept', async ({expect}) => {
+    const parentIpc = new ParentIPC('testdata/sleep3.sh', []);
+    await parentIpc.start();
+    await expect(parentIpc.wait()).rejects.toThrowError('command exited before connection established');
+});
