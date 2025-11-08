@@ -345,6 +345,10 @@ function sleep(ms: number): Promise<void> {
 // throws on timeout
 function timeout<T>(prom: Promise<T>, ms: number): Promise<T> {
     return Promise.race(
-        [prom, new Promise((res, reject) => setTimeout(reject, ms))]
+        [
+            prom,
+            new Promise((res, reject) => {
+                setTimeout(() => {reject(new Error('timed out'))}, ms)
+            })]
     ) as Promise<T>;
 }
