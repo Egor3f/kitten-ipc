@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
+	"efprojects.com/kitten-ipc/kitcom/internal/common"
 	"efprojects.com/kitten-ipc/kitcom/internal/golang"
 	"efprojects.com/kitten-ipc/kitcom/internal/ts"
 )
@@ -114,9 +115,13 @@ func apiParserByPath(src string) (ApiParser, error) {
 func apiParserByFilePath(src string) (ApiParser, error) {
 	switch path.Ext(src) {
 	case ".go":
-		return &golang.GoApiParser{}, nil
+		return &golang.GoApiParser{
+			Parser: &common.Parser{},
+		}, nil
 	case ".ts":
-		return &ts.TypescriptApiParser{}, nil
+		return &ts.TypescriptApiParser{
+			Parser: &common.Parser{},
+		}, nil
 	case ".js":
 		return nil, fmt.Errorf("vanilla javascript is not supported and never will be")
 	case "":
