@@ -99,20 +99,35 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 				apiMethod.Name = funcDecl.Name.Name
 				for _, param := range funcDecl.Type.Params.List {
 					var apiPar api.Val
-					ident := param.Type.(*ast.Ident)
-					switch ident.Name {
-					case "int":
-						apiPar.Type = api.TInt
-					case "string":
-						apiPar.Type = api.TString
-					case "bool":
-						apiPar.Type = api.TBool
-					default:
-						return nil, fmt.Errorf("parameter type %s is not supported yet", ident.Name)
-					}
+
 					if len(param.Names) != 1 {
 						return nil, fmt.Errorf("all parameters in method %s should be named", apiMethod.Name)
 					}
+
+					switch paramType := param.Type.(type) {
+					case *ast.Ident:
+						switch paramType.Name {
+						case "int":
+							apiPar.Type = api.TInt
+						case "string":
+							apiPar.Type = api.TString
+						case "bool":
+							apiPar.Type = api.TBool
+						default:
+							return nil, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
+						}
+					case *ast.ArrayType:
+						switch elementType := paramType.Elt.(type) {
+						case *ast.Ident:
+							switch elementType.Name {
+							case "byte":
+								apiPar.Type = api.TBlob
+							default:
+								return nil, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
+							}
+						}
+					}
+
 					apiPar.Name = param.Names[0].Name
 					apiMethod.Params = append(apiMethod.Params, apiPar)
 				}

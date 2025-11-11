@@ -21,6 +21,20 @@ func (api GoIpcApi) Div(a int, b int) (int, error) {
 	return a / b, nil
 }
 
+func (api GoIpcApi) XorData(data1 []byte, data2 []byte) ([]byte, error) {
+	if len(data1) == 0 || len(data2) == 0 {
+		return nil, fmt.Errorf("empty input data")
+	}
+	if len(data1) != len(data2) {
+		return nil, fmt.Errorf("input data length mismatch")
+	}
+	result := make([]byte, len(data1))
+	for i := 0; i < len(data1); i++ {
+		result[i] = data1[i] ^ data2[i]
+	}
+	return result, nil
+}
+
 func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
