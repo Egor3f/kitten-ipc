@@ -12,4 +12,9 @@ export default class GoIpcApi {
     const results = await this.ipc.call("GoIpcApi.Div", a, b);
     return results[0] as number;
   }
+
+  async XorData(data1: Uint8Array, data2: Uint8Array): Promise<Uint8Array> {
+    const results = await this.ipc.call("GoIpcApi.XorData", data1, data2);
+    return results[0] as Uint8Array;
+  }
 }

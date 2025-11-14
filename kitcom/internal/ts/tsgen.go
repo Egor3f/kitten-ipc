@@ -35,6 +35,7 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 				api.TInt:    "number",
 				api.TString: "string",
 				api.TBool:   "boolean",
+				api.TBlob:   "Uint8Array",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
