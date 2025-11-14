@@ -65,6 +65,8 @@ func (ipc *ipcCommon) readConn() {
 	scn.Buffer(nil, maxMessageLength)
 	for scn.Scan() {
 		var msg Message
+		a := scn.Bytes()
+		_ = a
 		if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
 			ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
 			break
@@ -109,28 +111,15 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	ipc.processingCalls.Add(1)
 	defer ipc.processingCalls.Add(-1)
 
-	parts := strings.Split(msg.Method, ".")
-	if len(parts) != 2 {
-		ipc.sendResponse(msg.Id, nil, fmt.Errorf("invalid method: %s", msg.Method))
-		return
-	}
-	endpointName, methodName := parts[0], parts[1]
-
-	localApi, ok := ipc.localApis[endpointName]
-	if !ok {
-		ipc.sendResponse(msg.Id, nil, fmt.Errorf("endpoint not found: %s", endpointName))
-		return
-	}
-
-	method := reflect.ValueOf(localApi).MethodByName(methodName)
-	if !method.IsValid() {
-		ipc.sendResponse(msg.Id, nil, fmt.Errorf("method not found: %s", msg.Method))
+	method, err := ipc.findMethod(msg.Method)
+	if err != nil {
+		ipc.sendResponse(msg.Id, nil, fmt.Errorf("find method: %w", err))
 		return
 	}
 
 	argsCount := method.Type().NumIn()
 	if len(msg.Params) != argsCount {
-		ipc.sendResponse(msg.Id, nil, fmt.Errorf("argument count mismatch: expected %d, got %d", argsCount, len(msg.Params)))
+		ipc.sendResponse(msg.Id, nil, fmt.Errorf("args count mismatch: expected %d, got %d", argsCount, len(msg.Params)))
 		return
 	}
 
@@ -154,6 +143,27 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	}
 
 	ipc.sendResponse(msg.Id, res, resErr)
+}
+
+func (ipc *ipcCommon) findMethod(methodName string) (reflect.Value, error) {
+	parts := strings.Split(methodName, ".")
+	if len(parts) != 2 {
+		return reflect.Value{}, fmt.Errorf("invalid method: %s", methodName)
+	}
+
+	endpointName, methodName := parts[0], parts[1]
+
+	localApi, ok := ipc.localApis[endpointName]
+	if !ok {
+		return reflect.Value{}, fmt.Errorf("endpoint not found: %s", endpointName)
+	}
+
+	method := reflect.ValueOf(localApi).MethodByName(methodName)
+	if !method.IsValid() {
+		return reflect.Value{}, fmt.Errorf("method not found: %s", methodName)
+	}
+
+	return method, nil
 }
 
 func (ipc *ipcCommon) sendResponse(id int64, result []any, err error) {
