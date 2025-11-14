@@ -43,8 +43,7 @@ func main() {
 
 	localApi := GoIpcApi{}
 
-	cmdStr := fmt.Sprintf("node %s", path.Join(cwd, "..", "ts/index.js"))
-	cmd := exec.Command(cmdStr)
+	cmd := exec.Command("node", path.Join(cwd, "ts/dist/index.js"))
 
 	ipc, err := kittenipc.NewParent(cmd, &localApi)
 	if err != nil {

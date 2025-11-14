@@ -3,26 +3,30 @@
      "rootDir": "./src",
      "outDir": "./dist",
 
-    "module": "nodenext",
-    "target": "esnext",
+    "module": "Node16",
+    "target": "ES2022",
+    "lib": ["ES2022"],
 
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
 
+    "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
-    "strict": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    //    "noUnusedLocals": true,
+    //    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedSideEffectImports": true,
 
-    "moduleDetection": "force",
     "verbatimModuleSyntax": true,
-  }
+    "moduleDetection": "force",
+    //    "isolatedModules": true,
+    //    "skipLibCheck": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
