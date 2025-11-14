@@ -98,58 +98,28 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 				var apiMethod api.Method
 				apiMethod.Name = funcDecl.Name.Name
 				for _, param := range funcDecl.Type.Params.List {
-					var apiPar api.Val
+					apiPar, err := fieldToVal(param)
+					if err != nil {
+						return nil, fmt.Errorf("parse parameter %s: %w", param.Names[0].Name, err)
+					}
 
 					if len(param.Names) != 1 {
 						return nil, fmt.Errorf("all parameters in method %s should be named", apiMethod.Name)
 					}
-
-					switch paramType := param.Type.(type) {
-					case *ast.Ident:
-						switch paramType.Name {
-						case "int":
-							apiPar.Type = api.TInt
-						case "string":
-							apiPar.Type = api.TString
-						case "bool":
-							apiPar.Type = api.TBool
-						default:
-							return nil, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
-						}
-					case *ast.ArrayType:
-						switch elementType := paramType.Elt.(type) {
-						case *ast.Ident:
-							switch elementType.Name {
-							case "byte":
-								apiPar.Type = api.TBlob
-							default:
-								return nil, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
-							}
-						}
-					}
-
 					apiPar.Name = param.Names[0].Name
+
 					apiMethod.Params = append(apiMethod.Params, apiPar)
 				}
 				for _, ret := range funcDecl.Type.Results.List {
-					var apiRet api.Val
-					ident := ret.Type.(*ast.Ident)
-					switch ident.Name {
-					case "int":
-						apiRet.Type = api.TInt
-					case "string":
-						apiRet.Type = api.TString
-					case "bool":
-						apiRet.Type = api.TBool
-					case "error":
-						// errors are processed other way
-						continue
-					default:
-						return nil, fmt.Errorf("return type %s is not supported yet", ident.Name)
+					apiRet, err := fieldToVal(ret)
+					if err != nil {
+						return nil, fmt.Errorf("parse return value %s: %w", ret.Names[0].Name, err)
 					}
+
 					if len(ret.Names) > 0 {
 						apiRet.Name = ret.Names[0].Name
 					}
+
 					apiMethod.Ret = append(apiMethod.Ret, apiRet)
 				}
 				endpoints[i].Methods = append(endpoints[i].Methods, apiMethod)
@@ -157,4 +127,34 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 		}
 	}
 	return endpoints, nil
+}
+
+func fieldToVal(param *ast.Field) (api.Val, error) {
+	var val api.Val
+	switch paramType := param.Type.(type) {
+	case *ast.Ident:
+		switch paramType.Name {
+		case "int":
+			val.Type = api.TInt
+		case "string":
+			val.Type = api.TString
+		case "bool":
+			val.Type = api.TBool
+		default:
+			return val, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
+		}
+	case *ast.ArrayType:
+		switch elementType := paramType.Elt.(type) {
+		case *ast.Ident:
+			switch elementType.Name {
+			case "byte":
+				val.Type = api.TBlob
+			default:
+				return val, fmt.Errorf("parameter type %s is not supported yet", elementType.Name)
+			}
+		}
+	default:
+		return val, fmt.Errorf("parameter type %T is not supported yet", paramType)
+	}
+	return val, nil
 }
