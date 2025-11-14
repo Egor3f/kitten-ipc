@@ -97,10 +97,13 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 			if recvIdent.Name == endpoint.Name {
 				var apiMethod api.Method
 				apiMethod.Name = funcDecl.Name.Name
-				for _, param := range funcDecl.Type.Params.List {
-					apiPar, err := fieldToVal(param)
+				for i, param := range funcDecl.Type.Params.List {
+					apiPar, err := fieldToVal(param, false)
 					if err != nil {
-						return nil, fmt.Errorf("parse parameter %s: %w", param.Names[0].Name, err)
+						return nil, fmt.Errorf("parse parameter %d for method %s: %w", i, apiMethod.Name, err)
+					}
+					if apiPar == nil {
+						continue
 					}
 
 					if len(param.Names) != 1 {
@@ -108,19 +111,22 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 					}
 					apiPar.Name = param.Names[0].Name
 
-					apiMethod.Params = append(apiMethod.Params, apiPar)
+					apiMethod.Params = append(apiMethod.Params, *apiPar)
 				}
-				for _, ret := range funcDecl.Type.Results.List {
-					apiRet, err := fieldToVal(ret)
+				for i, ret := range funcDecl.Type.Results.List {
+					apiRet, err := fieldToVal(ret, true)
 					if err != nil {
-						return nil, fmt.Errorf("parse return value %s: %w", ret.Names[0].Name, err)
+						return nil, fmt.Errorf("parse return value %d for method %s: %w", i, apiMethod.Name, err)
+					}
+					if apiRet == nil {
+						continue
 					}
 
 					if len(ret.Names) > 0 {
 						apiRet.Name = ret.Names[0].Name
 					}
 
-					apiMethod.Ret = append(apiMethod.Ret, apiRet)
+					apiMethod.Ret = append(apiMethod.Ret, *apiRet)
 				}
 				endpoints[i].Methods = append(endpoints[i].Methods, apiMethod)
 			}
@@ -129,7 +135,7 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 	return endpoints, nil
 }
 
-func fieldToVal(param *ast.Field) (api.Val, error) {
+func fieldToVal(param *ast.Field, returning bool) (*api.Val, error) {
 	var val api.Val
 	switch paramType := param.Type.(type) {
 	case *ast.Ident:
@@ -140,8 +146,14 @@ func fieldToVal(param *ast.Field) (api.Val, error) {
 			val.Type = api.TString
 		case "bool":
 			val.Type = api.TBool
+		case "error":
+			if returning {
+				return nil, nil
+			} else {
+				return nil, fmt.Errorf("errors are supported only as return types")
+			}
 		default:
-			return val, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
+			return nil, fmt.Errorf("parameter type %s is not supported yet", paramType.Name)
 		}
 	case *ast.ArrayType:
 		switch elementType := paramType.Elt.(type) {
@@ -150,11 +162,13 @@ func fieldToVal(param *ast.Field) (api.Val, error) {
 			case "byte":
 				val.Type = api.TBlob
 			default:
-				return val, fmt.Errorf("parameter type %s is not supported yet", elementType.Name)
+				return nil, fmt.Errorf("parameter type %s is not supported yet", elementType.Name)
 			}
+		default:
+			return nil, fmt.Errorf("parameter type %T is not supported yet", elementType)
 		}
 	default:
-		return val, fmt.Errorf("parameter type %T is not supported yet", paramType)
+		return nil, fmt.Errorf("parameter type %T is not supported yet", paramType)
 	}
-	return val, nil
+	return &val, nil
 }
