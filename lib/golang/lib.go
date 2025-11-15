@@ -124,8 +124,19 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	}
 
 	var args []reflect.Value
-	for _, param := range msg.Params {
-		args = append(args, reflect.ValueOf(param))
+	for i, arg := range msg.Args {
+		paramType := method.Type().In(i)
+		argType := reflect.TypeOf(arg)
+
+		// JSON decodes any number to float64. If we need int, we should check and convert
+		if paramType.Kind() == reflect.Int && argType.Kind() == reflect.Float64 {
+			floatArg := arg.(float64)
+			if float64(int64(floatArg)) == floatArg && !paramType.OverflowInt(int64(floatArg)) {
+				arg = arg.(int)
+			}
+		}
+
+		args = append(args, reflect.ValueOf(paramType))
 	}
 
 	results := method.Call(args)
