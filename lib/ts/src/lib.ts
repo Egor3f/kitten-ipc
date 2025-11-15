@@ -20,7 +20,7 @@ interface CallMessage {
     type: MsgType.Call,
     id: number,
     method: string;
-    params: Vals;
+    args: Vals;
 }
 
 interface ResponseMessage {
@@ -129,18 +129,18 @@ abstract class IPCCommon {
         }
 
         const argsCount = method.length;
-        if (msg.params.length !== argsCount) {
+        if (msg.args.length !== argsCount) {
             this.sendMsg({
                 type: MsgType.Response,
                 id: msg.id,
-                error: `argument count mismatch: expected ${ argsCount }, got ${ msg.params.length }`
+                error: `argument count mismatch: expected ${ argsCount }, got ${ msg.args.length }`
             });
             return;
         }
 
         try {
             this.processingCalls++;
-            let result = method.apply(endpoint, msg.params);
+            let result = method.apply(endpoint, msg.args);
             if (result instanceof Promise) {
                 result = await result;
             }
@@ -192,7 +192,7 @@ abstract class IPCCommon {
                 }
             };
             try {
-                this.sendMsg({type: MsgType.Call, id, method, params});
+                this.sendMsg({type: MsgType.Call, id, method, args: params});
             } catch (e) {
                 delete this.pendingCalls[id];
                 reject(new Error(`send call: ${ e }`));

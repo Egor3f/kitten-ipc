@@ -39,7 +39,7 @@ type Message struct {
 	Type   MsgType `json:"type"`
 	Id     int64   `json:"id"`
 	Method string  `json:"method"`
-	Params Vals    `json:"params"`
+	Args   Vals    `json:"args"`
 	Result Vals    `json:"result"`
 	Error  string  `json:"error"`
 }
@@ -118,8 +118,8 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	}
 
 	argsCount := method.Type().NumIn()
-	if len(msg.Params) != argsCount {
-		ipc.sendResponse(msg.Id, nil, fmt.Errorf("args count mismatch: expected %d, got %d", argsCount, len(msg.Params)))
+	if len(msg.Args) != argsCount {
+		ipc.sendResponse(msg.Id, nil, fmt.Errorf("args count mismatch: expected %d, got %d", argsCount, len(msg.Args)))
 		return
 	}
 
@@ -221,7 +221,7 @@ func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
 		Type:   MsgCall,
 		Id:     id,
 		Method: method,
-		Params: params,
+		Args:   params,
 	}
 
 	if err := ipc.sendMsg(msg); err != nil {
