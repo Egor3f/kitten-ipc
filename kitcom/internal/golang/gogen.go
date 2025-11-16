@@ -50,6 +50,17 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 			}
 			return td, nil
 		},
+		"convtype": func(valDef string, t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    fmt.Sprintf("int(%s.(float64))", valDef),
+				api.TString: fmt.Sprintf("%s.(string)", valDef),
+				api.TBool:   fmt.Sprintf("%s.(bool)", valDef),
+			}[t]
+			if !ok {
+				return "", fmt.Errorf("cannot convert type %v for val %s", t, valDef)
+			}
+			return td, nil
+		},
 		"zerovalue": func(t api.ValType) (string, error) {
 			v, ok := map[api.ValType]string{
 				api.TInt:    "0",
