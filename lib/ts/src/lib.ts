@@ -92,7 +92,7 @@ abstract class IPCCommon {
     protected processMsg(msg: Message): void {
         switch (msg.type) {
             case MsgType.Call:
-                this.handleCall(msg).catch(this.errorQueue.put);
+                this.handleCall(msg).catch((e) => this.errorQueue.put(e));
                 break;
             case MsgType.Response:
                 this.handleResponse(msg);
