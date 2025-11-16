@@ -110,6 +110,12 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	ipc.processingCalls.Add(1)
 	defer ipc.processingCalls.Add(-1)
 
+	defer func() {
+		if err := recover(); err != nil {
+			ipc.sendResponse(msg.Id, nil, fmt.Errorf("handle call panicked: %s", err))
+		}
+	}()
+
 	method, err := ipc.findMethod(msg.Method)
 	if err != nil {
 		ipc.sendResponse(msg.Id, nil, fmt.Errorf("find method: %w", err))
