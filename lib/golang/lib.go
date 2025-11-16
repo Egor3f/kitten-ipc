@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -66,7 +67,7 @@ func (ipc *ipcCommon) readConn() {
 	for scn.Scan() {
 		var msg Message
 		a := scn.Bytes()
-		_ = a
+		log.Println(string(a))
 		if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
 			ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
 			break

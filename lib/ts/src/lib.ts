@@ -9,6 +9,8 @@ import {AsyncQueue} from './asyncqueue.js';
 
 const IPC_SOCKET_ARG = 'ipc-socket';
 
+type JSONSerializable = string | number | boolean;
+
 enum MsgType {
     Call = 1,
     Response = 2,
@@ -169,7 +171,7 @@ abstract class IPCCommon {
         callback({result: msg.result || [], error: err});
     }
 
-    call(method: string, ...params: Vals): Promise<Vals> {
+    call(method: string, ...args: Vals): Promise<Vals> {
         return new Promise((resolve, reject) => {
             const id = this.nextId++;
 
@@ -181,12 +183,29 @@ abstract class IPCCommon {
                 }
             };
             try {
-                this.sendMsg({type: MsgType.Call, id, method, args: params});
+                this.sendMsg({type: MsgType.Call, id, method, args: args.map(this.convType)});
             } catch (e) {
                 delete this.pendingCalls[id];
                 reject(new Error(`send call: ${ e }`));
             }
         });
+    }
+
+    private convType(arg: any): JSONSerializable {
+        // noinspection FallThroughInSwitchStatementJS
+        switch (typeof arg) {
+            case 'string':
+            case 'boolean':
+            case 'number':
+                return arg;
+            // @ts-expect-error TS7029
+            case 'object':
+                if(arg instanceof Uint8Array) {
+                    return Buffer.from(arg).toString('base64');
+                }
+            default:
+                throw new Error(`arg type ${typeof arg} is not supported`);
+        }
     }
 
     stop() {
