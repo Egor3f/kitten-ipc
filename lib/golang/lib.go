@@ -2,6 +2,7 @@ package golang
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -154,11 +155,25 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 }
 
 func (ipc *ipcCommon) convType(needType reflect.Type, gotType reflect.Type, arg any) any {
-	// JSON decodes any number to float64. If we need int, we should check and convert
-	if needType.Kind() == reflect.Int && gotType.Kind() == reflect.Float64 {
-		floatArg := arg.(float64)
-		if float64(int64(floatArg)) == floatArg && !needType.OverflowInt(int64(floatArg)) {
-			arg = int(floatArg)
+	switch needType.Kind() {
+	case reflect.Int:
+		// JSON decodes any number to float64. If we need int, we should check and convert
+		if gotType.Kind() == reflect.Float64 {
+			floatArg := arg.(float64)
+			if float64(int64(floatArg)) == floatArg && !needType.OverflowInt(int64(floatArg)) {
+				arg = int(floatArg)
+			}
+		}
+	case reflect.Slice:
+		switch needType.Elem().Kind() {
+		case reflect.Uint8:
+			if gotType.Kind() == reflect.String {
+				var err error
+				arg, err = base64.StdEncoding.DecodeString(arg.(string))
+				if err != nil {
+					panic(fmt.Sprintf("decode base64: %s", err))
+				}
+			}
 		}
 	}
 	return arg

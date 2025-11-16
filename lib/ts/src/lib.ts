@@ -200,8 +200,8 @@ abstract class IPCCommon {
                 return arg;
             // @ts-expect-error TS7029
             case 'object':
-                if(arg instanceof Uint8Array) {
-                    return Buffer.from(arg).toString('base64');
+                if(arg instanceof Buffer) {
+                    return arg.toString('base64');
                 }
             default:
                 throw new Error(`arg type ${typeof arg} is not supported`);

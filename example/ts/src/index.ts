@@ -22,10 +22,9 @@ async function main() {
 
     console.log(`call result ts->go Div = ${await remoteApi.Div(10, 2)}`);
 
-    // todo check empty array
-    const data1 = new Uint8Array(100).fill(0b10101010, 0, 100);
-    const data2 = new Uint8Array(100).fill(0b11110000, 0, 100);
-    console.log(`call result ts->go XorData = ${await remoteApi.XorData(data1, data2)}`);
+    const data1 = Buffer.alloc(10, 0b10101010);
+    const data2 = Buffer.alloc(10, 0b11110000);
+    console.log(`call result ts->go XorData = ${(await remoteApi.XorData(data1, data2)).toString('hex')}`);
 
     await ipc.wait();
 }

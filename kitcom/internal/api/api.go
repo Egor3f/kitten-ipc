@@ -13,6 +13,23 @@ const (
 	TArray  ValType = 5
 )
 
+func (v ValType) String() string {
+	switch v {
+	case TInt:
+		return "int"
+	case TString:
+		return "string"
+	case TBool:
+		return "bool"
+	case TBlob:
+		return "blob"
+	case TArray:
+		return "array"
+	default:
+		panic("unreachable code")
+	}
+}
+
 type Val struct {
 	Name     string
 	Type     ValType
