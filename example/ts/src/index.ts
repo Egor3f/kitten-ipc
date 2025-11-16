@@ -20,7 +20,11 @@ async function main() {
 
     await ipc.start();
 
-    console.log(`remote call result from go = ${await remoteApi.Div(10, 2)}`);
+    console.log(`call result ts->go Div = ${await remoteApi.Div(10, 2)}`);
+
+    const data1 = new Uint8Array().fill(0b10101010, 0, 100);
+    const data2 = new Uint8Array().fill(0b11110000, 0, 100);
+    console.log(`call result ts->go XorData = ${await remoteApi.XorData(data1, data2)}`);
 
     await ipc.wait();
 }

@@ -60,7 +60,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Printf("remote call result from ts = %v", res)
+	log.Printf("call result go->ts = %v", res)
 
 	if err := ipc.Wait(1 * time.Second); err != nil {
 		log.Panic(err)
