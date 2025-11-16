@@ -13,6 +13,9 @@ import (
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
 )
 
+// todo: check int overflow
+// todo: check float is whole
+
 //go:embed gogen.tmpl
 var templateString string
 

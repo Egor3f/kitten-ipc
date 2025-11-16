@@ -21,5 +21,5 @@ func (t *TsIpcApi) Div(
 		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
 	}
 	_ = results
-	return results[0].(int), nil
+	return int(results[0].(float64)), nil
 }
