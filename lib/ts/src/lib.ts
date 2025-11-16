@@ -169,17 +169,6 @@ abstract class IPCCommon {
         callback({result: msg.result || [], error: err});
     }
 
-    stop() {
-        if (this.stopRequested) {
-            throw new Error('close already requested');
-        }
-        if (!this.conn || this.conn.readyState === 'closed') {
-            throw new Error('connection already closed');
-        }
-        this.stopRequested = true;
-        if (this.onClose) this.onClose();
-    }
-
     call(method: string, ...params: Vals): Promise<Vals> {
         return new Promise((resolve, reject) => {
             const id = this.nextId++;
@@ -198,6 +187,17 @@ abstract class IPCCommon {
                 reject(new Error(`send call: ${ e }`));
             }
         });
+    }
+
+    stop() {
+        if (this.stopRequested) {
+            throw new Error('close already requested');
+        }
+        if (!this.conn || this.conn.readyState === 'closed') {
+            throw new Error('connection already closed');
+        }
+        this.stopRequested = true;
+        if (this.onClose) this.onClose();
     }
 
     protected raiseErr(err: Error): void {
