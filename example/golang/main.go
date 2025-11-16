@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"time"
 
 	kittenipc "efprojects.com/kitten-ipc"
 )
@@ -59,9 +60,9 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Printf("remote call result = %v", res)
+	log.Printf("remote call result from ts = %v", res)
 
-	if err := ipc.Wait(); err != nil {
+	if err := ipc.Wait(1 * time.Second); err != nil {
 		log.Panic(err)
 	}
 }

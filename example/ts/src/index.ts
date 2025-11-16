@@ -20,7 +20,7 @@ async function main() {
 
     await ipc.start();
 
-    console.log(`remote call result = ${await remoteApi.Div(10, 2)}`);
+    console.log(`remote call result from go = ${await remoteApi.Div(10, 2)}`);
 
     await ipc.wait();
 }

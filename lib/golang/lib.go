@@ -350,34 +350,46 @@ func (p *ParentIPC) Stop() error {
 	}
 	p.stopRequested.Store(true)
 	if err := p.cmd.Process.Signal(syscall.SIGINT); err != nil {
-		return fmt.Errorf("send SIGTERM: %w", err)
+		return fmt.Errorf("send SIGINT: %w", err)
 	}
 	return p.Wait()
 }
 
-func (p *ParentIPC) Wait() error {
+func (p *ParentIPC) Wait(timeout ...time.Duration) (retErr error) {
 	waitErrCh := make(chan error, 1)
+
+	const defaultTimeout = time.Duration(1<<63 - 1) // max duration in go
+	_timeout := variadicToOption(timeout).OrElse(defaultTimeout)
 
 	go func() {
 		waitErrCh <- p.cmd.Wait()
 	}()
 
-	var retErr error
-	select {
-	case err := <-p.errCh:
-		retErr = fmt.Errorf("ipc internal error: %w", err)
-	case err := <-waitErrCh:
-		if err != nil {
-			var exitErr *exec.ExitError
-			if ok := errors.As(err, &exitErr); ok {
-				if !exitErr.Success() {
-					ws, ok := exitErr.Sys().(syscall.WaitStatus)
-					if !(ok && ws.Signaled() && ws.Signal() == syscall.SIGINT && p.stopRequested.Load()) {
-						retErr = fmt.Errorf("cmd wait: %w", err)
+loop:
+	for {
+		select {
+		case err := <-p.errCh:
+			retErr = mergeErr(retErr, fmt.Errorf("ipc internal error: %w", err))
+			break loop
+		case err := <-waitErrCh:
+			if err != nil {
+				var exitErr *exec.ExitError
+				if ok := errors.As(err, &exitErr); ok {
+					if !exitErr.Success() {
+						ws, ok := exitErr.Sys().(syscall.WaitStatus)
+						if !(ok && ws.Signaled() && ws.Signal() == syscall.SIGINT && p.stopRequested.Load()) {
+							retErr = mergeErr(retErr, fmt.Errorf("cmd wait: %w", err))
+						}
 					}
+				} else {
+					retErr = mergeErr(retErr, fmt.Errorf("cmd wait: %w", err))
 				}
-			} else {
-				retErr = fmt.Errorf("cmd wait: %w", err)
+			}
+			break loop
+		case <-time.After(_timeout):
+			p.stopRequested.Store(true)
+			if err := p.cmd.Process.Signal(syscall.SIGINT); err != nil {
+				retErr = mergeErr(retErr, fmt.Errorf("send SIGINT: %w", err))
 			}
 		}
 	}
@@ -449,4 +461,14 @@ func mapTypeNames(types []any) map[string]any {
 		result[typeName] = t
 	}
 	return result
+}
+
+func variadicToOption[T any](variadic []T) mo.Option[T] {
+	if len(variadic) >= 2 {
+		panic("variadic param count must be 0 or 1")
+	}
+	if len(variadic) == 0 {
+		return mo.None[T]()
+	}
+	return mo.Some(variadic[0])
 }
