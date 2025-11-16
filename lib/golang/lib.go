@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -66,9 +65,9 @@ func (ipc *ipcCommon) readConn() {
 	scn.Buffer(nil, maxMessageLength)
 	for scn.Scan() {
 		var msg Message
-		a := scn.Bytes()
-		log.Println(string(a))
-		if err := json.Unmarshal(scn.Bytes(), &msg); err != nil {
+		msgBytes := scn.Bytes()
+		//log.Println(string(msgBytes))
+		if err := json.Unmarshal(msgBytes, &msg); err != nil {
 			ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
 			break
 		}
@@ -94,7 +93,6 @@ func (ipc *ipcCommon) sendMsg(msg Message) error {
 	if err != nil {
 		return fmt.Errorf("marshal message: %w", err)
 	}
-
 	data = append(data, '\n')
 
 	if _, err := ipc.conn.Write(data); err != nil {
