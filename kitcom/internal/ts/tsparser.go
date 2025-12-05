@@ -74,32 +74,23 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 				par := parNode.AsParameterDeclaration()
 				var apiPar api.Val
 				apiPar.Name = par.Name().Text()
-				switch par.Type.Kind {
-				case ast.KindNumberKeyword:
-					apiPar.Type = api.TInt
-				case ast.KindStringKeyword:
-					apiPar.Type = api.TString
-				case ast.KindBooleanKeyword:
-					apiPar.Type = api.TBool
-				default:
-					err = fmt.Errorf("parameter type %s is not supported yet", par.Type.Kind)
+				t, typeErr := p.fieldToVal(par.Type)
+				if typeErr != nil {
+					err = fmt.Errorf("failed to parse parameter %s: %w", apiPar.Name, typeErr)
 					return false
 				}
+				apiPar.Type = t
 				apiMethod.Params = append(apiMethod.Params, apiPar)
 			}
+
 			if method.Type != nil {
 				var apiRet api.Val
-				switch method.Type.Kind {
-				case ast.KindNumberKeyword:
-					apiRet.Type = api.TInt
-				case ast.KindStringKeyword:
-					apiRet.Type = api.TString
-				case ast.KindBooleanKeyword:
-					apiRet.Type = api.TBool
-				default:
-					err = fmt.Errorf("return type %s is not supported yet", method.Type.Kind)
+				t, typeErr := p.fieldToVal(method.Type)
+				if typeErr != nil {
+					err = fmt.Errorf("failed to parse return type: %w", typeErr)
 					return false
 				}
+				apiRet.Type = t
 				apiMethod.Ret = []api.Val{apiRet}
 			}
 			endpoint.Methods = append(endpoint.Methods, apiMethod)
@@ -115,6 +106,28 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 	}
 
 	return endpoints, nil
+}
+
+func (p *TypescriptApiParser) fieldToVal(typ *ast.TypeNode) (api.ValType, error) {
+	switch typ.Kind {
+	case ast.KindNumberKeyword:
+		return api.TInt, nil
+	case ast.KindStringKeyword:
+		return api.TString, nil
+	case ast.KindBooleanKeyword:
+		return api.TBool, nil
+	case ast.KindTypeReference:
+		refNode := typ.AsTypeReferenceNode()
+		ident := refNode.TypeName.AsIdentifier()
+		switch ident.Text {
+		case "Buffer":
+			return api.TBlob, nil
+		default:
+			return 0, fmt.Errorf("reference type %s is not supported yet", ident.Text)
+		}
+	default:
+		return 0, fmt.Errorf("type %s is not supported yet", typ.Kind)
+	}
 }
 
 const TagName = "kittenipc"
