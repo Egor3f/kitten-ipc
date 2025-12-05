@@ -14,9 +14,6 @@ import (
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
-const TagName = "kittenipc"
-const TagComment = "api"
-
 type TypescriptApiParser struct {
 	*common.Parser
 }
@@ -54,37 +51,11 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 		}
 		cls := node.AsClassDeclaration()
 
-		jsDocNodes := cls.JSDoc(nil)
-		if len(jsDocNodes) == 0 {
-			return false
-		}
-
-		var isApi bool
-
-	outer:
-		for _, jsDocNode := range jsDocNodes {
-			jsDoc := jsDocNode.AsJSDoc()
-			if jsDoc.Tags == nil {
-				continue
-			}
-			for _, tag := range jsDoc.Tags.Nodes {
-				if tag.TagName().Text() == TagName {
-					for _, com := range tag.Comments() {
-						if strings.TrimSpace(com.Text()) == TagComment {
-							isApi = true
-							break outer
-						}
-					}
-				}
-			}
-		}
-
-		if !isApi {
+		if !p.isApiNode(cls) {
 			return false
 		}
 
 		var endpoint api.Endpoint
-
 		endpoint.Name = cls.Name().Text()
 
 		for _, member := range cls.MemberList().Nodes {
@@ -144,4 +115,30 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 	}
 
 	return endpoints, nil
+}
+
+const TagName = "kittenipc"
+const TagComment = "api"
+
+func (p *TypescriptApiParser) isApiNode(cls *ast.ClassDeclaration) bool {
+	jsDocNodes := cls.JSDoc(nil)
+	if len(jsDocNodes) == 0 {
+		return false
+	}
+	for _, jsDocNode := range jsDocNodes {
+		jsDoc := jsDocNode.AsJSDoc()
+		if jsDoc.Tags == nil {
+			continue
+		}
+		for _, tag := range jsDoc.Tags.Nodes {
+			if tag.TagName().Text() == TagName {
+				for _, com := range tag.Comments() {
+					if strings.TrimSpace(com.Text()) == TagComment {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
