@@ -291,6 +291,7 @@ func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg 
 				var err error
 				arg, err = base64.StdEncoding.DecodeString(arg.(string))
 				if err != nil {
+					// todo: avoid panicking. but this complicates codegen, so need to refactor somehow
 					panic(fmt.Sprintf("decode base64: %s", err))
 				}
 			}
