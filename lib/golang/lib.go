@@ -287,6 +287,7 @@ func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg 
 		switch needType.Elem().Kind() {
 		case reflect.Uint8:
 			if gotType.Kind() == reflect.String {
+				// need []byte, got (base64) string
 				var err error
 				arg, err = base64.StdEncoding.DecodeString(arg.(string))
 				if err != nil {

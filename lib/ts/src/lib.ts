@@ -142,11 +142,11 @@ abstract class IPCCommon {
 
         try {
             this.processingCalls++;
-            let result = method.apply(endpoint, msg.args.map(arg => this.convType(arg)));
+            let result = method.apply(endpoint, msg.args.map(this.deserialize));
             if (result instanceof Promise) {
                 result = await result;
             }
-            result = this.convType(result);
+            result = this.serialize(result);
             this.sendMsg({type: MsgType.Response, id: msg.id, result: [result]});
         } catch (err) {
             this.sendMsg({type: MsgType.Response, id: msg.id, error: `${ err }`});
@@ -184,7 +184,7 @@ abstract class IPCCommon {
                 }
             };
             try {
-                this.sendMsg({type: MsgType.Call, id, method, args: args.map(arg => this.convType(arg))});
+                this.sendMsg({type: MsgType.Call, id, method, args: args.map(this.serialize)});
             } catch (e) {
                 delete this.pendingCalls[id];
                 reject(new Error(`send call: ${ e }`));
@@ -192,7 +192,7 @@ abstract class IPCCommon {
         });
     }
 
-    public convType(arg: any): any {
+    public serialize(arg: any): any {
         // noinspection FallThroughInSwitchStatementJS
         switch (typeof arg) {
             case 'string':
@@ -202,7 +202,22 @@ abstract class IPCCommon {
             case 'object':
                 if(arg instanceof Buffer) {
                     return arg.toString('base64');
+                } else {
+                    throw new Error(`cannot serialize ${arg}`);
                 }
+            default:
+                throw new Error(`cannot serialize ${typeof arg}`);
+        }
+    }
+
+    public deserialize(arg: any): any {
+        // noinspection FallThroughInSwitchStatementJS
+        switch (typeof arg) {
+            case 'string':
+            case 'boolean':
+            case 'number':
+                return arg;
+            case 'object':
                 const keys = Object.entries(arg).map(p => p[0]).sort();
                 if(keys[0] === 'd' && keys[1] === 't') {
                     const type = arg['t'];
@@ -214,10 +229,10 @@ abstract class IPCCommon {
                             throw new Error(`custom object type ${type} is not supported`);
                     }
                 } else {
-                    throw new Error(`got unknown arg type: object with keys ${keys}`);
+                    throw new Error(`cannot deserialize object with keys ${keys}`);
                 }
             default:
-                throw new Error(`arg type ${typeof arg} is not supported`);
+                throw new Error(`cannot deserialize ${typeof arg}`);
         }
     }
 
