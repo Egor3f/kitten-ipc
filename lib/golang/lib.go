@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"efprojects.com/kitten-ipc/types"
 	"github.com/samber/mo"
 )
 
@@ -48,6 +49,7 @@ type Message struct {
 type IpcCommon interface {
 	Call(method string, params ...any) (Vals, error)
 	ConvType(needType reflect.Type, gotType reflect.Type, arg any) any
+	Serialize(arg any) any
 }
 
 type pendingCall struct {
@@ -160,31 +162,6 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	ipc.sendResponse(msg.Id, results, resErr)
 }
 
-func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg any) any {
-	switch needType.Kind() {
-	case reflect.Int:
-		// JSON decodes any number to float64. If we need int, we should check and convert
-		if gotType.Kind() == reflect.Float64 {
-			floatArg := arg.(float64)
-			if float64(int64(floatArg)) == floatArg && !needType.OverflowInt(int64(floatArg)) {
-				arg = int(floatArg)
-			}
-		}
-	case reflect.Slice:
-		switch needType.Elem().Kind() {
-		case reflect.Uint8:
-			if gotType.Kind() == reflect.String {
-				var err error
-				arg, err = base64.StdEncoding.DecodeString(arg.(string))
-				if err != nil {
-					panic(fmt.Sprintf("decode base64: %s", err))
-				}
-			}
-		}
-	}
-	return arg
-}
-
 func (ipc *ipcCommon) findMethod(methodName string) (reflect.Value, error) {
 	parts := strings.Split(methodName, ".")
 	if len(parts) != 2 {
@@ -291,6 +268,46 @@ func (ipc *ipcCommon) closeConn() {
 	for _, call := range ipc.pendingCalls {
 		call.resultChan <- mo.Err[Vals](fmt.Errorf("call cancelled due to ipc termination"))
 	}
+}
+
+func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg any) any {
+	switch needType.Kind() {
+	case reflect.Int:
+		// JSON decodes any number to float64. If we need int, we should check and convert
+		if gotType.Kind() == reflect.Float64 {
+			floatArg := arg.(float64)
+			if float64(int64(floatArg)) == floatArg && !needType.OverflowInt(int64(floatArg)) {
+				arg = int(floatArg)
+			}
+		}
+	case reflect.Slice:
+		switch needType.Elem().Kind() {
+		case reflect.Uint8:
+			if gotType.Kind() == reflect.String {
+				var err error
+				arg, err = base64.StdEncoding.DecodeString(arg.(string))
+				if err != nil {
+					panic(fmt.Sprintf("decode base64: %s", err))
+				}
+			}
+		}
+	}
+	return arg
+}
+
+func (ipc *ipcCommon) Serialize(arg any) any {
+	t := reflect.TypeOf(arg)
+	switch t.Kind() {
+	case reflect.Slice:
+		switch t.Elem().Name() {
+		case "uint8":
+			return map[string]any{
+				"t": types.TBlob.String(),
+				"d": base64.StdEncoding.EncodeToString(arg.([]byte)),
+			}
+		}
+	}
+	return arg
 }
 
 type ParentIPC struct {

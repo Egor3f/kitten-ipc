@@ -10,6 +10,7 @@ import (
 	_ "embed"
 
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
+	"efprojects.com/kitten-ipc/types"
 )
 
 // todo: check int overflow
@@ -40,24 +41,24 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 		"receiver": func(name string) string {
 			return defaultReceiver
 		},
-		"typedef": func(t api.ValType) (string, error) {
-			td, ok := map[api.ValType]string{
-				api.TInt:    "int",
-				api.TString: "string",
-				api.TBool:   "bool",
-				api.TBlob:   "[]byte",
+		"typedef": func(t types.ValType) (string, error) {
+			td, ok := map[types.ValType]string{
+				types.TInt:    "int",
+				types.TString: "string",
+				types.TBool:   "bool",
+				types.TBlob:   "[]byte",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
 			}
 			return td, nil
 		},
-		"convtype": func(valDef string, t api.ValType) (string, error) {
-			td, ok := map[api.ValType]string{
-				api.TInt:    fmt.Sprintf("int(%s.(float64))", valDef),
-				api.TString: fmt.Sprintf("%s.(string)", valDef),
-				api.TBool:   fmt.Sprintf("%s.(bool)", valDef),
-				api.TBlob: fmt.Sprintf(
+		"convtype": func(valDef string, t types.ValType) (string, error) {
+			td, ok := map[types.ValType]string{
+				types.TInt:    fmt.Sprintf("int(%s.(float64))", valDef),
+				types.TString: fmt.Sprintf("%s.(string)", valDef),
+				types.TBool:   fmt.Sprintf("%s.(bool)", valDef),
+				types.TBlob: fmt.Sprintf(
 					"%s.Ipc.ConvType(reflect.TypeOf([]byte{}), reflect.TypeOf(\"\"), %s).([]byte)",
 					defaultReceiver,
 					valDef,
@@ -68,12 +69,12 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 			}
 			return td, nil
 		},
-		"zerovalue": func(t api.ValType) (string, error) {
-			v, ok := map[api.ValType]string{
-				api.TInt:    "0",
-				api.TString: `""`,
-				api.TBool:   "false",
-				api.TBlob:   "[]byte{}",
+		"zerovalue": func(t types.ValType) (string, error) {
+			v, ok := map[types.ValType]string{
+				types.TInt:    "0",
+				types.TString: `""`,
+				types.TBool:   "false",
+				types.TBlob:   "[]byte{}",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate zero value for type %v", t)

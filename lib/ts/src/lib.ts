@@ -142,7 +142,7 @@ abstract class IPCCommon {
 
         try {
             this.processingCalls++;
-            let result = method.apply(endpoint, msg.args);
+            let result = method.apply(endpoint, msg.args.map(arg => this.convType(arg)));
             if (result instanceof Promise) {
                 result = await result;
             }
@@ -203,10 +203,22 @@ abstract class IPCCommon {
             case 'boolean':
             case 'number':
                 return arg;
-            // @ts-expect-error TS7029
             case 'object':
                 if(arg instanceof Buffer) {
                     return arg.toString('base64');
+                }
+                const keys = Object.entries(arg).map(p => p[0]).sort();
+                if(keys[0] === 'd' && keys[1] === 't') {
+                    const type = arg['t'];
+                    const data = arg['d'];
+                    switch (type) {
+                        case 'blob':
+                            return Buffer.from(data, 'base64');
+                        default:
+                            throw new Error(`custom object type ${type} is not supported`);
+                    }
+                } else {
+                    throw new Error(`got unknown arg type: object with keys ${keys}`);
                 }
             default:
                 throw new Error(`arg type ${typeof arg} is not supported`);

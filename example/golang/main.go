@@ -70,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Printf("call result go->ts XorData = %v", resXor)
+	log.Printf("call result go->ts XorData = %x", resXor)
 
 	if err := ipc.Wait(1 * time.Second); err != nil {
 		log.Panic(err)

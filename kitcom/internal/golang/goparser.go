@@ -9,6 +9,7 @@ import (
 
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
 	"efprojects.com/kitten-ipc/kitcom/internal/common"
+	"efprojects.com/kitten-ipc/types"
 )
 
 var decorComment = regexp.MustCompile(`^//\s?kittenipc:api$`)
@@ -141,11 +142,11 @@ func fieldToVal(param *ast.Field, returning bool) (*api.Val, error) {
 	case *ast.Ident:
 		switch paramType.Name {
 		case "int":
-			val.Type = api.TInt
+			val.Type = types.TInt
 		case "string":
-			val.Type = api.TString
+			val.Type = types.TString
 		case "bool":
-			val.Type = api.TBool
+			val.Type = types.TBool
 		case "error":
 			if returning {
 				return nil, nil
@@ -160,7 +161,7 @@ func fieldToVal(param *ast.Field, returning bool) (*api.Val, error) {
 		case *ast.Ident:
 			switch elementType.Name {
 			case "byte":
-				val.Type = api.TBlob
+				val.Type = types.TBlob
 			default:
 				return nil, fmt.Errorf("parameter type %s is not supported yet", elementType.Name)
 			}

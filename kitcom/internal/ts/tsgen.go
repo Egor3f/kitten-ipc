@@ -11,6 +11,7 @@ import (
 	_ "embed"
 
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
+	"efprojects.com/kitten-ipc/types"
 )
 
 //go:embed tsgen.tmpl
@@ -30,12 +31,12 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 
 	tpl := template.New("tsgen")
 	tpl = tpl.Funcs(map[string]any{
-		"typedef": func(t api.ValType) (string, error) {
-			td, ok := map[api.ValType]string{
-				api.TInt:    "number",
-				api.TString: "string",
-				api.TBool:   "boolean",
-				api.TBlob:   "Buffer",
+		"typedef": func(t types.ValType) (string, error) {
+			td, ok := map[types.ValType]string{
+				types.TInt:    "number",
+				types.TString: "string",
+				types.TBool:   "boolean",
+				types.TBlob:   "Buffer",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
