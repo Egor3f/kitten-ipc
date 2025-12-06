@@ -16,11 +16,6 @@ export default class {{ $e.Name }} {
     async {{  $mtd.Name  }}(
         {{ range $par := $mtd.Params }}{{ $par.Name }}: {{ $par.Type | typedef  }}, {{ end }}
     ): Promise<{{ if len $mtd.Ret }}{{ (index $mtd.Ret 0).Type | typedef }}{{ else }}void{{ end }}> {
-
-		{{ range $par := $mtd.Params -}}
-		    {{ $par.Name }} = this.ipc.convType({{ $par.Name }}, '{{ $par.Type | typedef }}');
-		{{- end -}}
-
         const results = await this.ipc.call('{{ $e.Name }}.{{ $mtd.Name }}',
             {{ range $par := $mtd.Params }}{{ $par.Name }}, {{ end }}
         );

@@ -146,6 +146,7 @@ abstract class IPCCommon {
             if (result instanceof Promise) {
                 result = await result;
             }
+            result = this.convType(result);
             this.sendMsg({type: MsgType.Response, id: msg.id, result: [result]});
         } catch (err) {
             this.sendMsg({type: MsgType.Response, id: msg.id, error: `${ err }`});
