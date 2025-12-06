@@ -11,13 +11,13 @@ export default class GoIpcApi {
 
   async Div(a: number, b: number): Promise<number> {
     const results = await this.ipc.call("GoIpcApi.Div", a, b);
-    results[0] = this.ipc.convType(results[0], "number");
+
     return results[0] as number;
   }
 
   async XorData(data1: Buffer, data2: Buffer): Promise<Buffer> {
     const results = await this.ipc.call("GoIpcApi.XorData", data1, data2);
-    results[0] = this.ipc.convType(results[0], "Buffer");
-    return results[0] as Buffer;
+
+    return Buffer.from(results[0], "base64");
   }
 }

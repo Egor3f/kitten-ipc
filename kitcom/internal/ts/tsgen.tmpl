@@ -20,11 +20,7 @@ export default class {{ $e.Name }} {
             {{ range $par := $mtd.Params }}{{ $par.Name }}, {{ end }}
         );
 
-        {{- range $i, $ret := $mtd.Ret -}}
-            results[{{ $i }}] = this.ipc.convType(results[{{ $i }}], '{{ $ret.Type | typedef }}');
-        {{- end -}}
-
-        return {{ range $i, $ret := $mtd.Ret }}{{ if $i }}, {{ end }}results[{{ $i }}] as {{ $ret.Type | typedef }}{{ end }}
+        return {{ range $i, $ret := $mtd.Ret }}{{ if $i }}, {{ end }}{{ convtype (printf "results[%d]" $i) $ret.Type }}{{ end }}
     }
 {{ end }}
 }

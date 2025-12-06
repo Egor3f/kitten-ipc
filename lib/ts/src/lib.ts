@@ -192,14 +192,10 @@ abstract class IPCCommon {
         });
     }
 
-    public convType(arg: any, toType?: string): any {
+    public convType(arg: any): any {
         // noinspection FallThroughInSwitchStatementJS
         switch (typeof arg) {
             case 'string':
-                if(toType === 'Buffer') {
-                    return Buffer.from(arg, 'base64');
-                }
-                return arg;
             case 'boolean':
             case 'number':
                 return arg;

@@ -43,6 +43,18 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 			}
 			return td, nil
 		},
+		"convtype": func(valDef string, t types.ValType) (string, error) {
+			td, ok := map[types.ValType]string{
+				types.TInt:    fmt.Sprintf("%s as number", valDef),
+				types.TString: fmt.Sprintf("%s as string", valDef),
+				types.TBool:   fmt.Sprintf("%s as boolean", valDef),
+				types.TBlob:   fmt.Sprintf("Buffer.from(%s, 'base64')", valDef),
+			}[t]
+			if !ok {
+				return "", fmt.Errorf("cannot convert type %v for val %s", t, valDef)
+			}
+			return td, nil
+		},
 	})
 	tpl = template.Must(tpl.Parse(templateString))
 
