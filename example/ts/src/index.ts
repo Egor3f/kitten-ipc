@@ -11,6 +11,19 @@ class TsIpcApi {
         }
         return a / b;
     }
+    XorData(data1: Buffer, data2: Buffer): Buffer {
+        if (data1.length === 0 || data2.length === 0) {
+            throw new Error('empty input data');
+        }
+        if (data1.length !== data2.length) {
+            throw new Error('input data length mismatch');
+        }
+        const result = Buffer.alloc(data1.length);
+        for (let i = 0; i < data1.length; i++) {
+            result[i] = data1[i]! ^ data2[i]!;
+        }
+        return result;
+    }
 }
 
 async function main() {

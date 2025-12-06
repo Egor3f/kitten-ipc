@@ -45,8 +45,9 @@ type Message struct {
 	Error  string  `json:"error"`
 }
 
-type Callable interface {
+type IpcCommon interface {
 	Call(method string, params ...any) (Vals, error)
+	ConvType(needType reflect.Type, gotType reflect.Type, arg any) any
 }
 
 type pendingCall struct {
@@ -138,7 +139,7 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	for i, arg := range msg.Args {
 		paramType := method.Type().In(i)
 		argType := reflect.TypeOf(arg)
-		arg = ipc.convType(paramType, argType, arg)
+		arg = ipc.ConvType(paramType, argType, arg)
 		args = append(args, reflect.ValueOf(arg))
 	}
 
@@ -159,7 +160,7 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 	ipc.sendResponse(msg.Id, results, resErr)
 }
 
-func (ipc *ipcCommon) convType(needType reflect.Type, gotType reflect.Type, arg any) any {
+func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg any) any {
 	switch needType.Kind() {
 	case reflect.Int:
 		// JSON decodes any number to float64. If we need int, we should check and convert

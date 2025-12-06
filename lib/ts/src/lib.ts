@@ -124,7 +124,7 @@ abstract class IPCCommon {
             this.sendMsg({type: MsgType.Response, id: msg.id, error: `endpoint not found: ${ endpointName }`});
             return;
         }
-        const method = endpoint[methodName];
+        const method: Function = endpoint[methodName];
         if (!method || typeof method !== 'function') {
             this.sendMsg({type: MsgType.Response, id: msg.id, error: `method not found: ${ msg.method }`});
             return;
@@ -183,7 +183,7 @@ abstract class IPCCommon {
                 }
             };
             try {
-                this.sendMsg({type: MsgType.Call, id, method, args: args.map(this.convType)});
+                this.sendMsg({type: MsgType.Call, id, method, args: args.map(arg => this.convType(arg))});
             } catch (e) {
                 delete this.pendingCalls[id];
                 reject(new Error(`send call: ${ e }`));
@@ -191,10 +191,14 @@ abstract class IPCCommon {
         });
     }
 
-    private convType(arg: any): JSONSerializable {
+    public convType(arg: any, toType?: string): any {
         // noinspection FallThroughInSwitchStatementJS
         switch (typeof arg) {
             case 'string':
+                if(toType === 'Buffer') {
+                    return Buffer.from(arg, 'base64');
+                }
+                return arg;
             case 'boolean':
             case 'number':
                 return arg;

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 	"time"
 
 	kittenipc "efprojects.com/kitten-ipc"
@@ -56,11 +57,20 @@ func main() {
 	}
 
 	remoteApi := TsIpcApi{Ipc: ipc}
-	res, err := remoteApi.Div(10, 2)
+	resDiv, err := remoteApi.Div(10, 2)
 	if err != nil {
 		log.Panic(err)
 	}
-	log.Printf("call result go->ts Div = %v", res)
+	log.Printf("call result go->ts Div = %v", resDiv)
+
+	data1 := slices.Repeat([]byte{0b10101010}, 10)
+	data2 := slices.Repeat([]byte{0b11110000}, 10)
+
+	resXor, err := remoteApi.XorData(data1, data2)
+	if err != nil {
+		log.Panic(err)
+	}
+	log.Printf("call result go->ts XorData = %v", resXor)
 
 	if err := ipc.Wait(1 * time.Second); err != nil {
 		log.Panic(err)

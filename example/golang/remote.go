@@ -5,21 +5,35 @@ package main
 import (
 	kittenipc "efprojects.com/kitten-ipc"
 	"fmt"
+	"reflect"
 )
 
 type TsIpcApi struct {
-	Ipc kittenipc.Callable
+	Ipc kittenipc.IpcCommon
 }
 
-func (t *TsIpcApi) Div(
+func (self *TsIpcApi) Div(
 	a int, b int,
 ) (
 	int, error,
 ) {
-	results, err := t.Ipc.Call("TsIpcApi.Div", a, b)
+	results, err := self.Ipc.Call("TsIpcApi.Div", a, b)
 	if err != nil {
 		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
 	}
 	_ = results
 	return int(results[0].(float64)), nil
+}
+
+func (self *TsIpcApi) XorData(
+	data1 []byte, data2 []byte,
+) (
+	[]byte, error,
+) {
+	results, err := self.Ipc.Call("TsIpcApi.XorData", data1, data2)
+	if err != nil {
+		return []byte{}, fmt.Errorf("call to TsIpcApi.XorData failed: %w", err)
+	}
+	_ = results
+	return self.Ipc.ConvType(reflect.TypeOf([]byte{}), reflect.TypeOf(""), results[0]).([]byte), nil
 }

@@ -14,17 +14,22 @@ export default class {{ $e.Name }} {
 
 {{ range $mtd := $e.Methods }}
     async {{  $mtd.Name  }}(
-        {{  range $par := $mtd.Params  }}{{ $par.Name }}: {{ $par.Type | typedef  }}, {{ end }}
+        {{ range $par := $mtd.Params }}{{ $par.Name }}: {{ $par.Type | typedef  }}, {{ end }}
     ): Promise<{{ if len $mtd.Ret }}{{ (index $mtd.Ret 0).Type | typedef }}{{ else }}void{{ end }}> {
+
+		{{ range $par := $mtd.Params -}}
+		    {{ $par.Name }} = this.ipc.convType({{ $par.Name }}, '{{ $par.Type | typedef }}');
+		{{- end -}}
+
         const results = await this.ipc.call('{{ $e.Name }}.{{ $mtd.Name }}',
             {{ range $par := $mtd.Params }}{{ $par.Name }}, {{ end }}
         );
 
-		{{- if eq (index $mtd.Ret 0).Type.String "blob" -}}
-            results[0] = Buffer.from(results[0], 'base64');
+        {{- range $i, $ret := $mtd.Ret -}}
+            results[{{ $i }}] = this.ipc.convType(results[{{ $i }}], '{{ $ret.Type | typedef }}');
         {{- end -}}
 
-		return {{ range $i, $ret := $mtd.Ret }}{{ if $i }}, {{ end }}results[{{ $i }}] as {{ $ret.Type | typedef }}{{ end }}
+        return {{ range $i, $ret := $mtd.Ret }}{{ if $i }}, {{ end }}results[{{ $i }}] as {{ $ret.Type | typedef }}{{ end }}
     }
 {{ end }}
 }
