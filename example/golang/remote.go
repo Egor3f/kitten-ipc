@@ -17,7 +17,7 @@ func (self *TsIpcApi) Div(
 ) (
 	int, error,
 ) {
-	results, err := self.Ipc.Call("TsIpcApi.Div", self.Ipc.Serialize(a), self.Ipc.Serialize(b))
+	results, err := self.Ipc.Call("TsIpcApi.Div", a, b)
 	if err != nil {
 		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
 	}
@@ -30,7 +30,7 @@ func (self *TsIpcApi) XorData(
 ) (
 	[]byte, error,
 ) {
-	results, err := self.Ipc.Call("TsIpcApi.XorData", self.Ipc.Serialize(data1), self.Ipc.Serialize(data2))
+	results, err := self.Ipc.Call("TsIpcApi.XorData", data1, data2)
 	if err != nil {
 		return []byte{}, fmt.Errorf("call to TsIpcApi.XorData failed: %w", err)
 	}

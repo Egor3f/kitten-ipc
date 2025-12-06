@@ -22,7 +22,7 @@ func ({{ $e.Name | receiver }} *{{ $e.Name }}) {{ $mtd.Name }}(
 ) (
 {{ range $mtd.Ret }}{{ .Type | typedef }}, {{ end }}error,
 ) {
-	results, err := {{ $e.Name | receiver }}.Ipc.Call("{{ $e.Name }}.{{ $mtd.Name }}"{{ range $mtd.Params }}, self.Ipc.Serialize({{ .Name }}){{ end }})
+	results, err := {{ $e.Name | receiver }}.Ipc.Call("{{ $e.Name }}.{{ $mtd.Name }}"{{ range $mtd.Params }}, {{ .Name }}{{ end }})
 	if err != nil {
 		return {{ range $mtd.Ret }}{{ .Type | zerovalue }}, {{ end }} fmt.Errorf("call to {{ $e.Name }}.{{ $mtd.Name }} failed: %w", err)
 	}

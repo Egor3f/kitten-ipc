@@ -49,7 +49,6 @@ type Message struct {
 type IpcCommon interface {
 	Call(method string, params ...any) (Vals, error)
 	ConvType(needType reflect.Type, gotType reflect.Type, arg any) any
-	Serialize(arg any) any
 }
 
 type pendingCall struct {
@@ -236,6 +235,10 @@ func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
 	ipc.pendingCalls[id] = call
 	ipc.mu.Unlock()
 
+	for i := range params {
+		params[i] = ipc.serialize(params[i])
+	}
+
 	msg := Message{
 		Type:   MsgCall,
 		Id:     id,
@@ -295,7 +298,7 @@ func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg 
 	return arg
 }
 
-func (ipc *ipcCommon) Serialize(arg any) any {
+func (ipc *ipcCommon) serialize(arg any) any {
 	t := reflect.TypeOf(arg)
 	switch t.Kind() {
 	case reflect.Slice:
