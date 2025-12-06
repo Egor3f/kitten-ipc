@@ -58,11 +58,7 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 				types.TInt:    fmt.Sprintf("int(%s.(float64))", valDef),
 				types.TString: fmt.Sprintf("%s.(string)", valDef),
 				types.TBool:   fmt.Sprintf("%s.(bool)", valDef),
-				types.TBlob: fmt.Sprintf(
-					"%s.Ipc.ConvType(reflect.TypeOf([]byte{}), reflect.TypeOf(\"\"), %s).([]byte)",
-					defaultReceiver,
-					valDef,
-				),
+				types.TBlob:   fmt.Sprintf("%s.([]byte)", valDef),
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot convert type %v for val %s", t, valDef)

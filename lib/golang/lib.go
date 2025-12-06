@@ -283,19 +283,6 @@ func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg 
 				arg = int(floatArg)
 			}
 		}
-	case reflect.Slice:
-		switch needType.Elem().Kind() {
-		case reflect.Uint8:
-			if gotType.Kind() == reflect.String {
-				// need []byte, got (base64) string
-				var err error
-				arg, err = base64.StdEncoding.DecodeString(arg.(string))
-				if err != nil {
-					// todo: avoid panicking. but this complicates codegen, so need to refactor somehow
-					panic(fmt.Sprintf("decode base64: %s", err))
-				}
-			}
-		}
 	}
 	return arg
 }
@@ -307,7 +294,7 @@ func (ipc *ipcCommon) serialize(arg any) any {
 		switch t.Elem().Name() {
 		case "uint8":
 			return map[string]any{
-				"t": types.TBlob.String(),
+				"t": types.TBlob,
 				"d": base64.StdEncoding.EncodeToString(arg.([]byte)),
 			}
 		}

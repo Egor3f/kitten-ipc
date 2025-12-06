@@ -6,8 +6,8 @@ package {{ .PkgName }}
 
 import (
 	"fmt"
-	"reflect"
 	kittenipc "efprojects.com/kitten-ipc"
+	"encoding/base64"
 )
 
 {{ range $e := .Api.Endpoints }}
@@ -26,7 +26,14 @@ func ({{ $e.Name | receiver }} *{{ $e.Name }}) {{ $mtd.Name }}(
 	if err != nil {
 		return {{ range $mtd.Ret }}{{ .Type | zerovalue }}, {{ end }} fmt.Errorf("call to {{ $e.Name }}.{{ $mtd.Name }} failed: %w", err)
 	}
-	_ = results
+	{{ range $i, $ret := $mtd.Ret }}
+		{{ if eq $ret.Type "blob" }}
+			results[{{ $i }}], err = base64.StdEncoding.DecodeString(results[{{ $i }}].(string))
+			if err != nil {
+				return {{ range $mtd.Ret }}{{ .Type | zerovalue }}, {{ end }} fmt.Errorf("call to {{ $e.Name }}.{{ $mtd.Name }}: error decoding blob: %w", err)
+			}
+		{{ end }}
+	{{ end }}
 	return {{ range $idx, $ret := $mtd.Ret }}{{ convtype ( printf "results[%d]" $idx ) $ret.Type }}, {{ end }}nil
 }
 {{ end }}

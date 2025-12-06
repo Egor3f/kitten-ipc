@@ -4,8 +4,8 @@ package main
 
 import (
 	kittenipc "efprojects.com/kitten-ipc"
+	"encoding/base64"
 	"fmt"
-	"reflect"
 )
 
 type TsIpcApi struct {
@@ -21,7 +21,7 @@ func (self *TsIpcApi) Div(
 	if err != nil {
 		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
 	}
-	_ = results
+
 	return int(results[0].(float64)), nil
 }
 
@@ -34,6 +34,11 @@ func (self *TsIpcApi) XorData(
 	if err != nil {
 		return []byte{}, fmt.Errorf("call to TsIpcApi.XorData failed: %w", err)
 	}
-	_ = results
-	return self.Ipc.ConvType(reflect.TypeOf([]byte{}), reflect.TypeOf(""), results[0]).([]byte), nil
+
+	results[0], err = base64.StdEncoding.DecodeString(results[0].(string))
+	if err != nil {
+		return []byte{}, fmt.Errorf("call to TsIpcApi.XorData: error decoding blob: %w", err)
+	}
+
+	return results[0].([]byte), nil
 }
