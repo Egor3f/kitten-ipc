@@ -124,10 +124,10 @@ func (p *TypescriptApiParser) fieldToVal(typ *ast.TypeNode) (types.ValType, erro
 		case "Buffer":
 			return types.TBlob, nil
 		default:
-			return 0, fmt.Errorf("reference type %s is not supported yet", ident.Text)
+			return types.TNoType, fmt.Errorf("reference type %s is not supported yet", ident.Text)
 		}
 	default:
-		return 0, fmt.Errorf("type %s is not supported yet", typ.Kind)
+		return types.TNoType, fmt.Errorf("type %s is not supported yet", typ.Kind)
 	}
 }
 
