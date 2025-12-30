@@ -222,6 +222,10 @@ func (ipc *ipcCommon) handleResponse(msg Message) {
 }
 
 func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
+	if ipc.conn == nil {
+		return nil, fmt.Errorf("ipc is not connected to remote process socket")
+	}
+
 	if ipc.stopRequested.Load() {
 		return nil, fmt.Errorf("ipc is stopping")
 	}
@@ -494,6 +498,9 @@ func mergeErr(errs ...error) (ret error) {
 func mapTypeNames(types []any) map[string]any {
 	result := make(map[string]any)
 	for _, t := range types {
+		if reflect.TypeOf(t).Kind() != reflect.Pointer {
+			panic(fmt.Sprintf("LocalAPI argument must be pointer"))
+		}
 		typeName := reflect.TypeOf(t).Elem().Name()
 		result[typeName] = t
 	}
