@@ -10,6 +10,8 @@ import (
 	"encoding/base64"
 )
 
+var _ = base64.StdEncoding
+
 {{ range $e := .Api.Endpoints }}
 
 type {{ .Name }} struct {
@@ -26,6 +28,7 @@ func ({{ $e.Name | receiver }} *{{ $e.Name }}) {{ $mtd.Name }}(
 	if err != nil {
 		return {{ range $mtd.Ret }}{{ .Type | zerovalue }}, {{ end }} fmt.Errorf("call to {{ $e.Name }}.{{ $mtd.Name }} failed: %w", err)
 	}
+	_ = results
 	{{ range $i, $ret := $mtd.Ret }}
 		{{ if eq $ret.Type "blob" }}
 			results[{{ $i }}], err = base64.StdEncoding.DecodeString(results[{{ $i }}].(string))
