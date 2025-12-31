@@ -2,6 +2,7 @@ package golang
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -66,6 +67,7 @@ type ipcCommon struct {
 	processingCalls atomic.Int64
 	stopRequested   atomic.Bool
 	mu              sync.Mutex
+	ctx             context.Context
 }
 
 func (ipc *ipcCommon) readConn() {
@@ -257,8 +259,12 @@ func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
 		return nil, fmt.Errorf("send call: %w", err)
 	}
 
-	result := <-call.resultChan
-	return result.Get()
+	select {
+	case result := <-call.resultChan:
+		return result.Get()
+	case <-ipc.ctx.Done():
+		return nil, ipc.ctx.Err()
+	}
 }
 
 func (ipc *ipcCommon) raiseErr(err error) {
@@ -313,12 +319,17 @@ type ParentIPC struct {
 }
 
 func NewParent(cmd *exec.Cmd, localApis ...any) (*ParentIPC, error) {
+	return NewParentWithContext(context.Background(), cmd, localApis...)
+}
+
+func NewParentWithContext(ctx context.Context, cmd *exec.Cmd, localApis ...any) (*ParentIPC, error) {
 	p := ParentIPC{
 		ipcCommon: &ipcCommon{
 			localApis:    mapTypeNames(localApis),
 			pendingCalls: make(map[int64]*pendingCall),
 			errCh:        make(chan error, 1),
 			socketPath:   filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d.sock", os.Getpid())),
+			ctx:          ctx,
 		},
 		cmd: cmd,
 	}
@@ -450,6 +461,7 @@ func NewChild(localApis ...any) (*ChildIPC, error) {
 			localApis:    mapTypeNames(localApis),
 			pendingCalls: make(map[int64]*pendingCall),
 			errCh:        make(chan error, 1),
+			ctx:          context.Background(), // todo: NewChildWithContext
 		},
 	}
 
