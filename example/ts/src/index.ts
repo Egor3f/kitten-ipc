@@ -28,7 +28,7 @@ class TsIpcApi {
 
 async function main() {
     const localApi = new TsIpcApi();
-    const ipc = new ChildIPC(localApi);
+    const ipc = new ChildIPC(undefined, localApi);
     const remoteApi = new GoIpcApi(ipc);
 
     await ipc.start();

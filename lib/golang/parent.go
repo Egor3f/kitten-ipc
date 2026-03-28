@@ -22,18 +22,22 @@ type ParentIPC struct {
 	cmdErr   error
 }
 
-func NewParent(cmd *exec.Cmd, localApis ...any) (*ParentIPC, error) {
-	return NewParentWithContext(context.Background(), cmd, localApis...)
+func NewParent(cmd *exec.Cmd, opts *Options, localApis ...any) (*ParentIPC, error) {
+	return NewParentWithContext(context.Background(), cmd, opts, localApis...)
 }
 
-func NewParentWithContext(ctx context.Context, cmd *exec.Cmd, localApis ...any) (*ParentIPC, error) {
+func NewParentWithContext(ctx context.Context, cmd *exec.Cmd, opts *Options, localApis ...any) (*ParentIPC, error) {
+	if opts == nil {
+		opts = &Options{}
+	}
 	p := ParentIPC{
 		ipcCommon: &ipcCommon{
-			localApis:    mapTypeNames(localApis),
-			pendingCalls: make(map[int64]*pendingCall),
-			errCh:        make(chan error, 1),
-			socketPath:   filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d-%d.sock", os.Getpid(), rand.Int63())),
-			ctx:          ctx,
+			localApis:     mapTypeNames(localApis),
+			pendingCalls:  make(map[int64]*pendingCall),
+			errCh:         make(chan error, 1),
+			socketPath:    filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d-%d.sock", os.Getpid(), rand.Int63())),
+			ctx:           ctx,
+			debugMessages: opts.DebugMessages,
 		},
 		cmd: cmd,
 	}

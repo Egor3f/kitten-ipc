@@ -4,6 +4,10 @@ import {AsyncQueue} from './asyncqueue.js';
 import type {CallMessage, CallResult, Message, ResponseMessage, Vals} from './protocol.js';
 import {MsgType} from './protocol.js';
 
+export interface IPCOptions {
+    debugMessages?: boolean;
+}
+
 export abstract class IPCCommon {
     protected localApis: Record<string, any>;
     protected socketPath: string;
@@ -13,12 +17,14 @@ export abstract class IPCCommon {
     protected stopRequested: boolean = false;
     protected processingCalls: number = 0;
     protected ready = false;
+    protected debugMessages: boolean;
 
     protected errorQueue = new AsyncQueue<Error>();
     protected onClose?: () => void;
 
-    protected constructor(localApis: object[], socketPath: string) {
+    protected constructor(localApis: object[], socketPath: string, opts?: IPCOptions) {
         this.socketPath = socketPath;
+        this.debugMessages = opts?.debugMessages ?? false;
 
         this.localApis = {};
         for (const localApi of localApis) {
@@ -47,6 +53,9 @@ export abstract class IPCCommon {
 
         rl.on('line', (line) => {
             try {
+                if (this.debugMessages) {
+                    console.log(`[ipc recv] ${line}`);
+                }
                 const msg: Message = JSON.parse(line);
                 this.processMsg(msg);
             } catch (e) {
@@ -73,6 +82,9 @@ export abstract class IPCCommon {
 
         try {
             const data = JSON.stringify(msg) + '\n';
+            if (this.debugMessages) {
+                console.log(`[ipc send] ${JSON.stringify(msg)}`);
+            }
             this.conn.write(data);
         } catch (e) {
             this.raiseErr(new Error(`send response for ${ msg.id }: ${ e }`));

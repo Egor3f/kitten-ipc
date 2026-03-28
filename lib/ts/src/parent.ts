@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as crypto from 'node:crypto';
 import {type ChildProcess, spawn} from 'node:child_process';
-import {IPCCommon} from './common.js';
+import {IPCCommon, type IPCOptions} from './common.js';
 import {timeout} from './util.js';
 
 const IPC_SOCKET_ARG = 'ipc-socket';
@@ -18,9 +18,9 @@ export class ParentIPC extends IPCCommon {
     private cmdExitResult: { code: number | null, signal: string | null } | null = null;
     private cmdExitCallbacks: ((result: { code: number | null, signal: string | null }) => void)[] = [];
 
-    constructor(cmdPath: string, cmdArgs: string[], ...localApis: object[]) {
+    constructor(cmdPath: string, cmdArgs: string[], opts?: IPCOptions, ...localApis: object[]) {
         const socketPath = path.join(os.tmpdir(), `kitten-ipc-${ process.pid }-${ crypto.randomInt(2**48 - 1) }.sock`);
-        super(localApis, socketPath);
+        super(localApis, socketPath, opts);
 
         this.cmdPath = cmdPath;
         if (cmdArgs.includes(`--${ IPC_SOCKET_ARG }`)) {

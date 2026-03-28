@@ -11,13 +11,17 @@ type ChildIPC struct {
 	*ipcCommon
 }
 
-func NewChild(localApis ...any) (*ChildIPC, error) {
+func NewChild(opts *Options, localApis ...any) (*ChildIPC, error) {
+	if opts == nil {
+		opts = &Options{}
+	}
 	c := ChildIPC{
 		ipcCommon: &ipcCommon{
-			localApis:    mapTypeNames(localApis),
-			pendingCalls: make(map[int64]*pendingCall),
-			errCh:        make(chan error, 1),
-			ctx:          context.Background(),
+			localApis:     mapTypeNames(localApis),
+			pendingCalls:  make(map[int64]*pendingCall),
+			errCh:         make(chan error, 1),
+			ctx:           context.Background(),
+			debugMessages: opts.DebugMessages,
 		},
 	}
 

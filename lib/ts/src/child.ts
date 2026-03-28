@@ -1,10 +1,10 @@
 import * as net from 'node:net';
-import {IPCCommon} from './common.js';
+import {IPCCommon, type IPCOptions} from './common.js';
 import {socketPathFromArgs} from './util.js';
 
 export class ChildIPC extends IPCCommon {
-    constructor(...localApis: object[]) {
-        super(localApis, socketPathFromArgs());
+    constructor(opts?: IPCOptions, ...localApis: object[]) {
+        super(localApis, socketPathFromArgs(), opts);
     }
 
     async start(): Promise<void> {

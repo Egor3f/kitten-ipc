@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"reflect"
 	"strings"
@@ -26,6 +27,10 @@ type pendingCall struct {
 	resultChan chan callResult
 }
 
+type Options struct {
+	DebugMessages bool
+}
+
 type ipcCommon struct {
 	localApis               map[string]any
 	socketPath              string
@@ -38,6 +43,7 @@ type ipcCommon struct {
 	mu                      sync.Mutex
 	writeMu                 sync.Mutex
 	ctx                     context.Context
+	debugMessages           bool
 }
 
 func (ipc *ipcCommon) readConn() {
@@ -46,6 +52,9 @@ func (ipc *ipcCommon) readConn() {
 	for scn.Scan() {
 		var msg Message
 		msgBytes := scn.Bytes()
+		if ipc.debugMessages {
+			log.Printf("[ipc recv] %s", string(msgBytes))
+		}
 		if err := json.Unmarshal(msgBytes, &msg); err != nil {
 			ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
 			break
@@ -70,6 +79,9 @@ func (ipc *ipcCommon) sendMsg(msg Message) error {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("marshal message: %w", err)
+	}
+	if ipc.debugMessages {
+		log.Printf("[ipc send] %s", string(data))
 	}
 	data = append(data, '\n')
 
