@@ -263,7 +263,7 @@ export class ParentIPC extends IPCCommon {
     private cmdExitCallbacks: ((result: { code: number | null, signal: string | null }) => void)[] = [];
 
     constructor(cmdPath: string, cmdArgs: string[], ...localApis: object[]) {
-        const socketPath = path.join(os.tmpdir(), `kitten-ipc-${ process.pid }-${ crypto.randomInt(2**48) }.sock`);
+        const socketPath = path.join(os.tmpdir(), `kitten-ipc-${ process.pid }-${ crypto.randomInt(2**48 - 1) }.sock`);
         super(localApis, socketPath);
 
         this.cmdPath = cmdPath;
@@ -302,7 +302,7 @@ export class ParentIPC extends IPCCommon {
             this.cmdExitCallbacks = [];
         });
 
-        this.acceptConn().catch((e) => this.raiseErr(e as Error));
+        await this.acceptConn();
     }
 
     private async acceptConn(): Promise<void> {
@@ -320,7 +320,7 @@ export class ParentIPC extends IPCCommon {
             this.readConn();
         } catch (e) {
             if (this.cmd) this.cmd.kill();
-            this.raiseErr(e as Error);
+            throw e;
         }
     }
 
@@ -337,23 +337,27 @@ export class ParentIPC extends IPCCommon {
             }
         });
 
-        const result = await Promise.race([
-            exitPromise.then(({ code, signal }) => {
-                if (signal || code) {
-                    if (signal) throw new Error(`Process exited with signal ${ signal }`);
-                    else throw new Error(`Process exited with code ${ code }`);
-                } else if (!this.ready) {
-                    throw new Error('command exited before connection established');
-                }
-            }),
-            this.errorQueue.collect().then((errors) => {
-                if (errors.length === 1) {
-                    throw errors[0];
-                } else if (errors.length > 1) {
-                    throw new Error(errors.map(e => e.toString()).join(', '));
-                }
-            }),
-        ]);
+        try {
+            await Promise.race([
+                exitPromise.then(({ code, signal }) => {
+                    if (signal || code) {
+                        if (signal) throw new Error(`Process exited with signal ${ signal }`);
+                        else throw new Error(`Process exited with code ${ code }`);
+                    } else if (!this.ready) {
+                        throw new Error('command exited before connection established');
+                    }
+                }),
+                this.errorQueue.collect().then((errors) => {
+                    if (errors.length === 1) {
+                        throw errors[0];
+                    } else if (errors.length > 1) {
+                        throw new Error(errors.map(e => e.toString()).join(', '));
+                    }
+                }),
+            ]);
+        } finally {
+            try { fs.unlinkSync(this.socketPath); } catch {}
+        }
     }
 }
 
@@ -374,20 +378,28 @@ export class ChildIPC extends IPCCommon {
     }
 
     async wait(): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            const errors = await this.errorQueue.collect();
-            if(errors.length === 1) {
-                reject(errors[0]);
-            } else if(errors.length > 1) {
-                reject(new Error(errors.map(e => e.toString()).join(', ')));
-            }
+        const closePromise = new Promise<void>((resolve) => {
             this.onClose = () => {
                 if (this.processingCalls === 0) {
                     this.conn?.destroy();
                     resolve();
                 }
             };
+            if (this.stopRequested && this.processingCalls === 0) {
+                this.conn?.destroy();
+                resolve();
+            }
         });
+
+        const errorPromise = this.errorQueue.collect().then((errors) => {
+            if (errors.length === 1) {
+                throw errors[0];
+            } else if (errors.length > 1) {
+                throw new Error(errors.map(e => e.toString()).join(', '));
+            }
+        });
+
+        await Promise.race([closePromise, errorPromise]);
     }
 }
 

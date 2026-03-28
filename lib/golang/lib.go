@@ -458,6 +458,7 @@ loop:
 	}
 
 	p.closeConn()
+	_ = os.Remove(p.socketPath)
 
 	return retErr
 }
