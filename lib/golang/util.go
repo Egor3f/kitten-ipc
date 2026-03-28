@@ -22,9 +22,12 @@ func mapTypeNames(types []any) map[string]any {
 	result := make(map[string]any)
 	for _, t := range types {
 		if reflect.TypeOf(t).Kind() != reflect.Pointer {
-			panic(fmt.Sprintf("LocalAPI argument must be pointer"))
+			panic(fmt.Sprintf("LocalAPI argument must be pointer to struct"))
 		}
 		typeName := reflect.TypeOf(t).Elem().Name()
+		if typeName == "" {
+			panic(fmt.Sprintf("LocalAPI argument must be pointer to struct"))
+		}
 		result[typeName] = t
 	}
 	return result
