@@ -58,4 +58,14 @@ func TestConvType(t *testing.T) {
 		result := ipc.ConvType(reflect.TypeOf(true), reflect.TypeOf(true), true)
 		assert.Equal(t, true, result)
 	})
+
+	t.Run("base64 string to []byte", func(t *testing.T) {
+		result := ipc.ConvType(reflect.TypeOf([]byte{}), reflect.TypeOf(""), "AQID")
+		assert.Equal(t, []byte{0x01, 0x02, 0x03}, result)
+	})
+
+	t.Run("empty base64 string to []byte", func(t *testing.T) {
+		result := ipc.ConvType(reflect.TypeOf([]byte{}), reflect.TypeOf(""), "")
+		assert.Equal(t, []byte{}, result)
+	})
 }

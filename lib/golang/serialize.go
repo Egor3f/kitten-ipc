@@ -30,6 +30,16 @@ func (ipc *ipcCommon) ConvType(needType reflect.Type, gotType reflect.Type, arg 
 				arg = int(floatArg)
 			}
 		}
+	case reflect.Slice:
+		if needType.Elem().Kind() == reflect.Uint8 {
+			// Need []byte — incoming blob is a base64 string (from TS serialize)
+			if s, ok := arg.(string); ok {
+				decoded, err := base64.StdEncoding.DecodeString(s)
+				if err == nil {
+					arg = decoded
+				}
+			}
+		}
 	}
 	return arg
 }
