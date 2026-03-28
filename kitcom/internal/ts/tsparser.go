@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/api"
-	"efprojects.com/kitten-ipc/kitcom/internal/common"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/parser"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/api"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/common"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/parser"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
 type TypescriptApiParser struct {

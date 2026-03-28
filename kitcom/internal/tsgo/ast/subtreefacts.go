@@ -1,7 +1,7 @@
 package ast
 
 import (
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
 )
 
 type SubtreeFacts int32

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/stringutil"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/stringutil"
 )
 
 type Path string
@@ -724,7 +724,12 @@ func ConvertToRelativePath(absoluteOrRelativePath string, options ComparePathsOp
 	return GetRelativePathToDirectoryOrUrl(options.CurrentDirectory, absoluteOrRelativePath, false /*isAbsolutePathAnUrl*/, options)
 }
 
-func GetRelativePathToDirectoryOrUrl(directoryPathOrUrl string, relativeOrAbsolutePath string, isAbsolutePathAnUrl bool, options ComparePathsOptions) string {
+func GetRelativePathToDirectoryOrUrl(
+	directoryPathOrUrl string,
+	relativeOrAbsolutePath string,
+	isAbsolutePathAnUrl bool,
+	options ComparePathsOptions,
+) string {
 	pathComponents := GetPathComponentsRelativeTo(
 		directoryPathOrUrl,
 		relativeOrAbsolutePath,
@@ -812,7 +817,11 @@ func GetAnyExtensionFromPath(path string, extensions []string, ignoreCase bool) 
 	return ""
 }
 
-func getAnyExtensionFromPathWorker(path string, extensions []string, stringEqualityComparer func(a, b string) bool) string {
+func getAnyExtensionFromPathWorker(
+	path string,
+	extensions []string,
+	stringEqualityComparer func(a, b string) bool,
+) string {
 	for _, extension := range extensions {
 		result := tryGetExtensionFromPath(path, extension, stringEqualityComparer)
 		if result != "" {
@@ -991,7 +1000,10 @@ func ForEachAncestorDirectoryStoppingAtGlobalCache[T any](
 	return result
 }
 
-func ForEachAncestorDirectory[T any](directory string, callback func(directory string) (result T, stop bool)) (result T, ok bool) {
+func ForEachAncestorDirectory[T any](
+	directory string,
+	callback func(directory string) (result T, stop bool),
+) (result T, ok bool) {
 	for {
 		result, stop := callback(directory)
 		if stop {
@@ -1008,7 +1020,10 @@ func ForEachAncestorDirectory[T any](directory string, callback func(directory s
 	}
 }
 
-func ForEachAncestorDirectoryPath[T any](directory Path, callback func(directory Path) (result T, stop bool)) (result T, ok bool) {
+func ForEachAncestorDirectoryPath[T any](
+	directory Path,
+	callback func(directory Path) (result T, stop bool),
+) (result T, ok bool) {
 	return ForEachAncestorDirectory(string(directory), func(directory string) (T, bool) {
 		return callback(Path(directory))
 	})

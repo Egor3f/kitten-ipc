@@ -1,6 +1,6 @@
 package ast
 
-import "efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
+import "github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
 
 // Ideally, this would get cached on the node factory so there's only ever one set of closures made per factory
 func getDeepCloneVisitor(f *NodeFactory, syntheticLocation bool) *NodeVisitor {

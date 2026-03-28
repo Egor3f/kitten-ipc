@@ -9,7 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/stringutil"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/stringutil"
 	"github.com/go-json-experiment/json"
 )
 

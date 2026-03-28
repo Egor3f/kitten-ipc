@@ -1,7 +1,7 @@
 
 SHELL := /bin/bash
 tsgo_dir = ./internal/tsgo
-my_package = efprojects.com/kitten-ipc/kitcom/internal/tsgo
+my_package = github.com/egor3f/kitten-ipc/kitcom/internal/tsgo
 
 
 default:

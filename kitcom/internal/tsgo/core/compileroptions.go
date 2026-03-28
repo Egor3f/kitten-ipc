@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/collections"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/collections"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
 //go:generate go tool golang.org/x/tools/cmd/stringer -type=ModuleKind -trimprefix=ModuleKind -output=modulekind_stringer_generated.go

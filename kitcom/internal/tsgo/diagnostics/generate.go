@@ -20,8 +20,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/repo"
 	"github.com/go-json-experiment/json"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/repo"
 )
 
 type diagnosticMessage struct {

@@ -1,4 +1,4 @@
-module efprojects.com/kitten-ipc
+module github.com/egor3f/kitten-ipc
 
 go 1.25.1
 

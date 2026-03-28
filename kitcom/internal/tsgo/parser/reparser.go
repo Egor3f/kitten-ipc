@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
 )
 
 func (p *Parser) finishReparsedNode(node *ast.Node, locationNode *ast.Node) {
@@ -132,7 +132,13 @@ func (p *Parser) reparseUnhosted(tag *ast.Node, parent *ast.Node, jsDoc *ast.Nod
 	}
 }
 
-func (p *Parser) reparseJSDocSignature(jsSignature *ast.Node, fun *ast.Node, jsDoc *ast.Node, tag *ast.Node, modifiers *ast.ModifierList) *ast.Node {
+func (p *Parser) reparseJSDocSignature(
+	jsSignature *ast.Node,
+	fun *ast.Node,
+	jsDoc *ast.Node,
+	tag *ast.Node,
+	modifiers *ast.ModifierList,
+) *ast.Node {
 	var signature *ast.Node
 	clonedModifiers := p.factory.DeepCloneReparseModifiers(modifiers)
 	switch fun.Kind {
@@ -548,7 +554,11 @@ func (p *Parser) makeQuestionIfOptional(parameter *ast.JSDocParameterTag) *ast.N
 	return questionToken
 }
 
-func findMatchingParameter(fun *ast.Node, parameterTag *ast.JSDocParameterTag, jsDoc *ast.Node) (*ast.ParameterDeclaration, bool) {
+func findMatchingParameter(
+	fun *ast.Node,
+	parameterTag *ast.JSDocParameterTag,
+	jsDoc *ast.Node,
+) (*ast.ParameterDeclaration, bool) {
 	tagIndex := -1
 	paramCount := -1
 	for _, tag := range jsDoc.AsJSDoc().Tags.Nodes {

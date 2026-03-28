@@ -1,8 +1,8 @@
 package ast
 
 import (
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
 type JSDocParsingMode int
@@ -22,7 +22,10 @@ type SourceFileParseOptions struct {
 	JSDocParsingMode               JSDocParsingMode
 }
 
-func GetSourceFileAffectingCompilerOptions(fileName string, options *core.CompilerOptions) core.SourceFileAffectingCompilerOptions {
+func GetSourceFileAffectingCompilerOptions(
+	fileName string,
+	options *core.CompilerOptions,
+) core.SourceFileAffectingCompilerOptions {
 	// Declaration files are not parsed/bound differently depending on compiler options.
 	if tspath.IsDeclarationFileName(fileName) {
 		return core.SourceFileAffectingCompilerOptions{}
@@ -35,7 +38,11 @@ type ExternalModuleIndicatorOptions struct {
 	force bool
 }
 
-func GetExternalModuleIndicatorOptions(fileName string, options *core.CompilerOptions, metadata SourceFileMetaData) ExternalModuleIndicatorOptions {
+func GetExternalModuleIndicatorOptions(
+	fileName string,
+	options *core.CompilerOptions,
+	metadata SourceFileMetaData,
+) ExternalModuleIndicatorOptions {
 	if tspath.IsDeclarationFileName(fileName) {
 		return ExternalModuleIndicatorOptions{}
 	}

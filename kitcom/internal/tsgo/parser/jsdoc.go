@@ -4,10 +4,10 @@ import (
 	"strings"
 	"unicode"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/diagnostics"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/stringutil"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/diagnostics"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/stringutil"
 )
 
 type jsdocState int32
@@ -717,7 +717,12 @@ func isObjectOrObjectArrayTypeReference(node *ast.TypeNode) bool {
 	}
 }
 
-func (p *Parser) parseParameterOrPropertyTag(start int, tagName *ast.IdentifierNode, target propertyLikeParse, indent int) *ast.Node {
+func (p *Parser) parseParameterOrPropertyTag(
+	start int,
+	tagName *ast.IdentifierNode,
+	target propertyLikeParse,
+	indent int,
+) *ast.Node {
 	typeExpression := p.tryParseTypeExpression()
 	isNameFirst := typeExpression == nil
 	p.skipWhitespaceOrAsterisk()
@@ -745,7 +750,12 @@ func (p *Parser) parseParameterOrPropertyTag(start int, tagName *ast.IdentifierN
 	return p.finishNode(result, start)
 }
 
-func (p *Parser) parseNestedTypeLiteral(typeExpression *ast.Node, name *ast.EntityName, target propertyLikeParse, indent int) *ast.Node {
+func (p *Parser) parseNestedTypeLiteral(
+	typeExpression *ast.Node,
+	name *ast.EntityName,
+	target propertyLikeParse,
+	indent int,
+) *ast.Node {
 	if typeExpression != nil && isObjectOrObjectArrayTypeReference(typeExpression.Type()) {
 		pos := p.nodePos()
 		var children []*ast.Node
@@ -770,7 +780,13 @@ func (p *Parser) parseNestedTypeLiteral(typeExpression *ast.Node, name *ast.Enti
 	return nil
 }
 
-func (p *Parser) parseReturnTag(previousTags []*ast.Node, start int, tagName *ast.IdentifierNode, indent int, indentText string) *ast.Node {
+func (p *Parser) parseReturnTag(
+	previousTags []*ast.Node,
+	start int,
+	tagName *ast.IdentifierNode,
+	indent int,
+	indentText string,
+) *ast.Node {
 	if core.Some(previousTags, ast.IsJSDocReturnTag) {
 		p.parseErrorAt(tagName.Pos(), p.scanner.TokenStart(), diagnostics.X_0_tag_already_specified, tagName.Text())
 	}
@@ -780,7 +796,13 @@ func (p *Parser) parseReturnTag(previousTags []*ast.Node, start int, tagName *as
 }
 
 // pass indent=-1 to skip parsing trailing comments (as when a type tag is nested in a typedef)
-func (p *Parser) parseTypeTag(previousTags []*ast.Node, start int, tagName *ast.IdentifierNode, indent int, indentText string) *ast.Node {
+func (p *Parser) parseTypeTag(
+	previousTags []*ast.Node,
+	start int,
+	tagName *ast.IdentifierNode,
+	indent int,
+	indentText string,
+) *ast.Node {
 	if core.Some(previousTags, ast.IsJSDocTypeTag) {
 		p.parseErrorAt(tagName.Pos(), p.scanner.TokenStart(), diagnostics.X_0_tag_already_specified, tagName.Text())
 	}
@@ -862,7 +884,13 @@ func (p *Parser) parsePropertyAccessEntityNameExpression() *ast.Node {
 	return node
 }
 
-func (p *Parser) parseSimpleTag(start int, createTag func(tagName *ast.IdentifierNode, comment *ast.NodeList) *ast.Node, tagName *ast.IdentifierNode, margin int, indentText string) *ast.Node {
+func (p *Parser) parseSimpleTag(
+	start int,
+	createTag func(tagName *ast.IdentifierNode, comment *ast.NodeList) *ast.Node,
+	tagName *ast.IdentifierNode,
+	margin int,
+	indentText string,
+) *ast.Node {
 	return p.finishNode(createTag(tagName, p.parseTrailingTagComments(start, p.nodePos(), margin, indentText)), start)
 }
 
@@ -1034,7 +1062,11 @@ func (p *Parser) parseChildPropertyTag(indent int) *ast.Node {
 	return p.parseChildParameterOrPropertyTag(propertyLikeParseProperty, indent, nil)
 }
 
-func (p *Parser) parseChildParameterOrPropertyTag(target propertyLikeParse, indent int, name *ast.EntityName) *ast.Node {
+func (p *Parser) parseChildParameterOrPropertyTag(
+	target propertyLikeParse,
+	indent int,
+	name *ast.EntityName,
+) *ast.Node {
 	canParseTag := true
 	seenAsterisk := false
 	for {

@@ -3,9 +3,9 @@
 package main
 
 import (
-	kittenipc "efprojects.com/kitten-ipc"
 	"encoding/base64"
 	"fmt"
+	kittenipc "github.com/egor3f/kitten-ipc"
 )
 
 var _ = base64.StdEncoding

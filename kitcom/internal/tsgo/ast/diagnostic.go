@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/diagnostics"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/diagnostics"
 )
 
 // Diagnostic

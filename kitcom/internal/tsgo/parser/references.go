@@ -3,9 +3,9 @@ package parser
 import (
 	"strings"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
 func collectExternalModuleReferences(file *ast.SourceFile) {
@@ -14,7 +14,10 @@ func collectExternalModuleReferences(file *ast.SourceFile) {
 	}
 
 	if file.Flags&ast.NodeFlagsPossiblyContainsDynamicImport != 0 || ast.IsInJSFile(file.AsNode()) {
-		ast.ForEachDynamicImportOrRequireCall(file /*includeTypeSpaceImports*/, true /*requireStringLiteralLikeArgument*/, true, func(node *ast.Node, moduleSpecifier *ast.Expression) bool {
+		ast.ForEachDynamicImportOrRequireCall(file /*includeTypeSpaceImports*/, true /*requireStringLiteralLikeArgument*/, true, func(
+			node *ast.Node,
+			moduleSpecifier *ast.Expression,
+		) bool {
 			ast.SetImportsOfSourceFile(file, append(file.Imports(), moduleSpecifier))
 			return false
 		})

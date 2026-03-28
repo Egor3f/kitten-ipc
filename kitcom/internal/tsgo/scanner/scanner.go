@@ -9,12 +9,12 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/debug"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/diagnostics"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/jsnum"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/stringutil"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/debug"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/diagnostics"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/jsnum"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/stringutil"
 )
 
 type EscapeSequenceScanningFlags int32
@@ -2235,7 +2235,11 @@ func isConflictMarkerTrivia(text string, pos int) bool {
 	return false
 }
 
-func scanConflictMarkerTrivia(text string, pos int, reportError func(diag *diagnostics.Message, pos int, length int, args ...any)) int {
+func scanConflictMarkerTrivia(
+	text string,
+	pos int,
+	reportError func(diag *diagnostics.Message, pos int, length int, args ...any),
+) int {
 	if reportError != nil {
 		reportError(diagnostics.Merge_conflict_marker_encountered, pos, mergeConflictMarkerLength)
 	}
@@ -2459,7 +2463,13 @@ func ComputePositionOfLineAndCharacter(lineStarts []core.TextPos, line int, char
 	return ComputePositionOfLineAndCharacterEx(lineStarts, line, character, nil, false)
 }
 
-func ComputePositionOfLineAndCharacterEx(lineStarts []core.TextPos, line int, character int, text *string, allowEdits bool) int {
+func ComputePositionOfLineAndCharacterEx(
+	lineStarts []core.TextPos,
+	line int,
+	character int,
+	text *string,
+	allowEdits bool,
+) int {
 	if line < 0 || line >= len(lineStarts) {
 		if allowEdits {
 			// Clamp line to nearest allowable value

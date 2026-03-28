@@ -7,9 +7,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/debug"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/debug"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
 // Atomic ids
@@ -2302,7 +2302,11 @@ func getModuleInstanceState(node *Node, ancestors []*Node, visited map[NodeId]Mo
 	}
 }
 
-func getModuleInstanceStateCached(node *Node, ancestors []*Node, visited map[NodeId]ModuleInstanceState) ModuleInstanceState {
+func getModuleInstanceStateCached(
+	node *Node,
+	ancestors []*Node,
+	visited map[NodeId]ModuleInstanceState,
+) ModuleInstanceState {
 	if visited == nil {
 		visited = make(map[NodeId]ModuleInstanceState)
 	}
@@ -2319,7 +2323,11 @@ func getModuleInstanceStateCached(node *Node, ancestors []*Node, visited map[Nod
 	return result
 }
 
-func getModuleInstanceStateWorker(node *Node, ancestors []*Node, visited map[NodeId]ModuleInstanceState) ModuleInstanceState {
+func getModuleInstanceStateWorker(
+	node *Node,
+	ancestors []*Node,
+	visited map[NodeId]ModuleInstanceState,
+) ModuleInstanceState {
 	// A module is uninstantiated if it contains only
 	switch node.Kind {
 	case KindInterfaceDeclaration, KindTypeAliasDeclaration, KindJSTypeAliasDeclaration:
@@ -2373,7 +2381,11 @@ func getModuleInstanceStateWorker(node *Node, ancestors []*Node, visited map[Nod
 	return ModuleInstanceStateInstantiated
 }
 
-func getModuleInstanceStateForAliasTarget(node *Node, ancestors []*Node, visited map[NodeId]ModuleInstanceState) ModuleInstanceState {
+func getModuleInstanceStateForAliasTarget(
+	node *Node,
+	ancestors []*Node,
+	visited map[NodeId]ModuleInstanceState,
+) ModuleInstanceState {
 	spec := node.AsExportSpecifier()
 	name := spec.PropertyName
 	if name == nil {
@@ -2543,7 +2555,11 @@ func GetImpliedNodeFormatForFile(path string, packageJsonType string) core.Modul
 	return impliedNodeFormat
 }
 
-func GetEmitModuleFormatOfFileWorker(fileName string, options *core.CompilerOptions, sourceFileMetaData SourceFileMetaData) core.ModuleKind {
+func GetEmitModuleFormatOfFileWorker(
+	fileName string,
+	options *core.CompilerOptions,
+	sourceFileMetaData SourceFileMetaData,
+) core.ModuleKind {
 	result := GetImpliedNodeFormatForEmitWorker(fileName, options.GetEmitModuleKind(), sourceFileMetaData)
 	if result != core.ModuleKindNone {
 		return result
@@ -2551,7 +2567,11 @@ func GetEmitModuleFormatOfFileWorker(fileName string, options *core.CompilerOpti
 	return options.GetEmitModuleKind()
 }
 
-func GetImpliedNodeFormatForEmitWorker(fileName string, emitModuleKind core.ModuleKind, sourceFileMetaData SourceFileMetaData) core.ResolutionMode {
+func GetImpliedNodeFormatForEmitWorker(
+	fileName string,
+	emitModuleKind core.ModuleKind,
+	sourceFileMetaData SourceFileMetaData,
+) core.ResolutionMode {
 	if core.ModuleKindNode16 <= emitModuleKind && emitModuleKind <= core.ModuleKindNodeNext {
 		return sourceFileMetaData.ImpliedNodeFormat
 	}
@@ -3539,7 +3559,11 @@ func IsRightSideOfQualifiedNameOrPropertyAccess(node *Node) bool {
 	return false
 }
 
-func ShouldTransformImportCall(fileName string, options *core.CompilerOptions, impliedNodeFormatForEmit core.ModuleKind) bool {
+func ShouldTransformImportCall(
+	fileName string,
+	options *core.CompilerOptions,
+	impliedNodeFormatForEmit core.ModuleKind,
+) bool {
 	moduleKind := options.GetEmitModuleKind()
 	if core.ModuleKindNode16 <= moduleKind && moduleKind <= core.ModuleKindNodeNext || moduleKind == core.ModuleKindPreserve {
 		return false

@@ -1,4 +1,4 @@
-module efprojects.com/kitten-ipc/kitcom
+module github.com/egor3f/kitten-ipc/kitcom
 
 go 1.25.1
 

@@ -3,7 +3,7 @@ package ast
 import (
 	"sync/atomic"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/collections"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/collections"
 )
 
 // Symbol

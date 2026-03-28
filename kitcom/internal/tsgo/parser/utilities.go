@@ -3,9 +3,9 @@ package parser
 import (
 	"slices"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/scanner"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/scanner"
 )
 
 func getLanguageVariant(scriptKind core.ScriptKind) core.LanguageVariant {
@@ -25,7 +25,12 @@ func tokenIsIdentifierOrKeywordOrGreaterThan(token ast.Kind) bool {
 	return token == ast.KindGreaterThanToken || tokenIsIdentifierOrKeyword(token)
 }
 
-func GetJSDocCommentRanges(f *ast.NodeFactory, commentRanges []ast.CommentRange, node *ast.Node, text string) []ast.CommentRange {
+func GetJSDocCommentRanges(
+	f *ast.NodeFactory,
+	commentRanges []ast.CommentRange,
+	node *ast.Node,
+	text string,
+) []ast.CommentRange {
 	switch node.Kind {
 	case ast.KindParameter, ast.KindTypeParameter, ast.KindFunctionExpression, ast.KindArrowFunction, ast.KindParenthesizedExpression, ast.KindVariableDeclaration, ast.KindExportSpecifier:
 		for commentRange := range scanner.GetTrailingCommentRanges(f, text, node.Pos()) {

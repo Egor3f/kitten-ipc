@@ -4,8 +4,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/ast"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/ast"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/core"
 )
 
 func tokenIsIdentifierOrKeyword(token ast.Kind) bool {

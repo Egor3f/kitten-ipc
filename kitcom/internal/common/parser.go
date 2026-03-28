@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/api"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/api"
 )
 
 type Parser struct {

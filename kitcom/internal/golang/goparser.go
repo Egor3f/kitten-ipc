@@ -7,8 +7,8 @@ import (
 	"go/token"
 	"regexp"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/api"
-	"efprojects.com/kitten-ipc/kitcom/internal/common"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/api"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/common"
 )
 
 var decorComment = regexp.MustCompile(`^//\s?kittenipc:api$`)

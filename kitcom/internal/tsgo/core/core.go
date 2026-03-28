@@ -11,10 +11,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/debug"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/jsonutil"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/stringutil"
-	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/debug"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/jsonutil"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/stringutil"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 )
 
 func Filter[T any](slice []T, f func(T) bool) []T {
@@ -620,11 +620,24 @@ func comparableValuesEqual[T comparable](a, b T) bool {
 	return a == b
 }
 
-func DiffMaps[K comparable, V comparable](m1 map[K]V, m2 map[K]V, onAdded func(K, V), onRemoved func(K, V), onChanged func(K, V, V)) {
+func DiffMaps[K comparable, V comparable](
+	m1 map[K]V,
+	m2 map[K]V,
+	onAdded func(K, V),
+	onRemoved func(K, V),
+	onChanged func(K, V, V),
+) {
 	DiffMapsFunc(m1, m2, comparableValuesEqual, onAdded, onRemoved, onChanged)
 }
 
-func DiffMapsFunc[K comparable, V any](m1 map[K]V, m2 map[K]V, equalValues func(V, V) bool, onAdded func(K, V), onRemoved func(K, V), onChanged func(K, V, V)) {
+func DiffMapsFunc[K comparable, V any](
+	m1 map[K]V,
+	m2 map[K]V,
+	equalValues func(V, V) bool,
+	onAdded func(K, V),
+	onRemoved func(K, V),
+	onChanged func(K, V, V),
+) {
 	for k, v2 := range m2 {
 		if _, ok := m1[k]; !ok {
 			onAdded(k, v2)

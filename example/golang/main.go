@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	kittenipc "efprojects.com/kitten-ipc"
+	kittenipc "github.com/egor3f/kitten-ipc"
 )
 
 // kittenipc:api

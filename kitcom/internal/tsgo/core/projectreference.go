@@ -1,6 +1,6 @@
 package core
 
-import "efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
+import "github.com/egor3f/kitten-ipc/kitcom/internal/tsgo/tspath"
 
 type ProjectReference struct {
 	Path         string

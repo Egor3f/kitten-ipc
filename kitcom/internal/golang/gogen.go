@@ -9,8 +9,8 @@ import (
 
 	_ "embed"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/api"
-	"efprojects.com/kitten-ipc/kitcom/internal/common"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/api"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/common"
 )
 
 //go:embed gogen.tmpl

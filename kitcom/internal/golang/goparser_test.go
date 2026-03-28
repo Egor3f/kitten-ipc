@@ -3,8 +3,8 @@ package golang
 import (
 	"testing"
 
-	"efprojects.com/kitten-ipc/kitcom/internal/api"
-	"efprojects.com/kitten-ipc/kitcom/internal/common"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/api"
+	"github.com/egor3f/kitten-ipc/kitcom/internal/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
