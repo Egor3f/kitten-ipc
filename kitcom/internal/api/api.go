@@ -1,14 +1,18 @@
 package api
 
-import "efprojects.com/kitten-ipc/types"
+type ValType string
 
-// todo check TInt size < 64
-// todo check not float
+const (
+	TNoType ValType = ""
+	TInt    ValType = "int"
+	TString ValType = "string"
+	TBool   ValType = "bool"
+	TBlob   ValType = "blob"
+)
 
 type Val struct {
-	Name     string
-	Type     types.ValType
-	Children []Val
+	Name string
+	Type ValType
 }
 
 type Method struct {

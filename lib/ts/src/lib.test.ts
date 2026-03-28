@@ -1,5 +1,5 @@
 import {test} from 'vitest';
-import {ParentIPC} from './lib.js';
+import {ParentIPC} from './parent.js';
 
 test('test connection timeout', async ({expect}) => {
     const parentIpc = new ParentIPC('../testdata/sleep15.sh', []);

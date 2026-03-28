@@ -12,7 +12,6 @@ import (
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/core"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/parser"
 	"efprojects.com/kitten-ipc/kitcom/internal/tsgo/tspath"
-	"efprojects.com/kitten-ipc/types"
 )
 
 type TypescriptApiParser struct {
@@ -109,25 +108,25 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 	return endpoints, nil
 }
 
-func (p *TypescriptApiParser) fieldToVal(typ *ast.TypeNode) (types.ValType, error) {
+func (p *TypescriptApiParser) fieldToVal(typ *ast.TypeNode) (api.ValType, error) {
 	switch typ.Kind {
 	case ast.KindNumberKeyword:
-		return types.TInt, nil
+		return api.TInt, nil
 	case ast.KindStringKeyword:
-		return types.TString, nil
+		return api.TString, nil
 	case ast.KindBooleanKeyword:
-		return types.TBool, nil
+		return api.TBool, nil
 	case ast.KindTypeReference:
 		refNode := typ.AsTypeReferenceNode()
 		ident := refNode.TypeName.AsIdentifier()
 		switch ident.Text {
 		case "Buffer":
-			return types.TBlob, nil
+			return api.TBlob, nil
 		default:
-			return types.TNoType, fmt.Errorf("reference type %s is not supported yet", ident.Text)
+			return api.TNoType, fmt.Errorf("reference type %s is not supported yet", ident.Text)
 		}
 	default:
-		return types.TNoType, fmt.Errorf("type %s is not supported yet", typ.Kind)
+		return api.TNoType, fmt.Errorf("type %s is not supported yet", typ.Kind)
 	}
 }
 

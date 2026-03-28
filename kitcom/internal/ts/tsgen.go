@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 	"text/template"
 
 	_ "embed"
 
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
-	"efprojects.com/kitten-ipc/types"
+	"efprojects.com/kitten-ipc/kitcom/internal/common"
 )
 
 //go:embed tsgen.tmpl
@@ -31,24 +30,24 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 
 	tpl := template.New("tsgen")
 	tpl = tpl.Funcs(map[string]any{
-		"typedef": func(t types.ValType) (string, error) {
-			td, ok := map[types.ValType]string{
-				types.TInt:    "number",
-				types.TString: "string",
-				types.TBool:   "boolean",
-				types.TBlob:   "Buffer",
+		"typedef": func(t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    "number",
+				api.TString: "string",
+				api.TBool:   "boolean",
+				api.TBlob:   "Buffer",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
 			}
 			return td, nil
 		},
-		"convtype": func(valDef string, t types.ValType) (string, error) {
-			td, ok := map[types.ValType]string{
-				types.TInt:    fmt.Sprintf("%s as number", valDef),
-				types.TString: fmt.Sprintf("%s as string", valDef),
-				types.TBool:   fmt.Sprintf("%s as boolean", valDef),
-				types.TBlob:   fmt.Sprintf("Buffer.from(%s, 'base64')", valDef),
+		"convtype": func(valDef string, t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    fmt.Sprintf("%s as number", valDef),
+				api.TString: fmt.Sprintf("%s as string", valDef),
+				api.TBool:   fmt.Sprintf("%s as boolean", valDef),
+				api.TBlob:   fmt.Sprintf("Buffer.from(%s, 'base64')", valDef),
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot convert type %v for val %s", t, valDef)
@@ -64,22 +63,8 @@ func (g *TypescriptApiGenerator) Generate(apis *api.Api, destFile string) error 
 		return fmt.Errorf("execute template: %w", err)
 	}
 
-	if err := g.writeDest(destFile, buf.Bytes()); err != nil {
+	if err := common.WriteFile(destFile, buf.Bytes()); err != nil {
 		return fmt.Errorf("write file: %w", err)
-	}
-
-	return nil
-}
-
-func (g *TypescriptApiGenerator) writeDest(destFile string, bytes []byte) error {
-	f, err := os.OpenFile(destFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("open destination file: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := f.Write(bytes); err != nil {
-		return fmt.Errorf("write formatted source: %w", err)
 	}
 
 	prettierCmd := exec.Command("npx", "prettier", destFile, "--write")

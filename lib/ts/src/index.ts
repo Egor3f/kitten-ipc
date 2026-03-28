@@ -1,1 +1,2 @@
-export {ParentIPC, ChildIPC} from './lib.js';
+export {ParentIPC} from './parent.js';
+export {ChildIPC} from './child.js';

@@ -4,17 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"os"
+	"strings"
 	"text/template"
 
 	_ "embed"
 
 	"efprojects.com/kitten-ipc/kitcom/internal/api"
-	"efprojects.com/kitten-ipc/types"
+	"efprojects.com/kitten-ipc/kitcom/internal/common"
 )
-
-// todo: check int overflow
-// todo: check float is whole
 
 //go:embed gogen.tmpl
 var templateString string
@@ -34,43 +31,41 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 		Api:     apis,
 	}
 
-	const defaultReceiver = "self"
-
 	tpl := template.New("gogen")
 	tpl = tpl.Funcs(map[string]any{
 		"receiver": func(name string) string {
-			return defaultReceiver
+			return strings.ToLower(name[:1])
 		},
-		"typedef": func(t types.ValType) (string, error) {
-			td, ok := map[types.ValType]string{
-				types.TInt:    "int",
-				types.TString: "string",
-				types.TBool:   "bool",
-				types.TBlob:   "[]byte",
+		"typedef": func(t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    "int",
+				api.TString: "string",
+				api.TBool:   "bool",
+				api.TBlob:   "[]byte",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate type %v", t)
 			}
 			return td, nil
 		},
-		"convtype": func(valDef string, t types.ValType) (string, error) {
-			td, ok := map[types.ValType]string{
-				types.TInt:    fmt.Sprintf("int(%s.(float64))", valDef),
-				types.TString: fmt.Sprintf("%s.(string)", valDef),
-				types.TBool:   fmt.Sprintf("%s.(bool)", valDef),
-				types.TBlob:   fmt.Sprintf("%s.([]byte)", valDef),
+		"convtype": func(valDef string, t api.ValType) (string, error) {
+			td, ok := map[api.ValType]string{
+				api.TInt:    fmt.Sprintf("int(%s.(float64))", valDef),
+				api.TString: fmt.Sprintf("%s.(string)", valDef),
+				api.TBool:   fmt.Sprintf("%s.(bool)", valDef),
+				api.TBlob:   fmt.Sprintf("%s.([]byte)", valDef),
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot convert type %v for val %s", t, valDef)
 			}
 			return td, nil
 		},
-		"zerovalue": func(t types.ValType) (string, error) {
-			v, ok := map[types.ValType]string{
-				types.TInt:    "0",
-				types.TString: `""`,
-				types.TBool:   "false",
-				types.TBlob:   "[]byte{}",
+		"zerovalue": func(t api.ValType) (string, error) {
+			v, ok := map[api.ValType]string{
+				api.TInt:    "0",
+				api.TString: `""`,
+				api.TBool:   "false",
+				api.TBlob:   "[]byte{}",
 			}[t]
 			if !ok {
 				return "", fmt.Errorf("cannot generate zero value for type %v", t)
@@ -86,27 +81,14 @@ func (g *GoApiGenerator) Generate(apis *api.Api, destFile string) error {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
-	if err := g.writeDest(destFile, buf.Bytes()); err != nil {
-		return fmt.Errorf("write file: %w", err)
-	}
-
-	return nil
-}
-
-func (g *GoApiGenerator) writeDest(destFile string, bytes []byte) error {
-	f, err := os.OpenFile(destFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("open destination file: %w", err)
-	}
-	defer f.Close()
-
-	formatted, err := format.Source(bytes)
+	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
 		return fmt.Errorf("format source: %w", err)
 	}
 
-	if _, err := f.Write(formatted); err != nil {
-		return fmt.Errorf("write formatted source: %w", err)
+	if err := common.WriteFile(destFile, formatted); err != nil {
+		return fmt.Errorf("write file: %w", err)
 	}
+
 	return nil
 }
