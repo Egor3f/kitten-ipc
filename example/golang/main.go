@@ -47,7 +47,7 @@ func main() {
 
 	cmd := exec.Command("node", path.Join(cwd, "ts/dist/index.js"))
 
-	ipc, err := kittenipc.NewParent(cmd, nil, &localApi)
+	ipc, err := kittenipc.NewParent(cmd, &kittenipc.Options{DebugMessages: true}, &localApi)
 	if err != nil {
 		log.Panic(err)
 	}

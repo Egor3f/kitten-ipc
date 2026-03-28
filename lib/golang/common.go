@@ -71,7 +71,7 @@ func (ipc *ipcCommon) handleIncomingMsg(msg Message) {
 	case MsgCall:
 		go ipc.handleIncomingCall(msg)
 	case MsgResponse:
-		ipc.handleResponse(msg)
+		ipc.handleOutgoingResponse(msg)
 	}
 }
 
@@ -183,7 +183,7 @@ func (ipc *ipcCommon) sendResponse(id int64, result []any, err error) {
 	}
 }
 
-func (ipc *ipcCommon) handleResponse(msg Message) {
+func (ipc *ipcCommon) handleOutgoingResponse(msg Message) {
 	ipc.mu.Lock()
 	call, ok := ipc.pendingCalls[msg.Id]
 	if ok {
