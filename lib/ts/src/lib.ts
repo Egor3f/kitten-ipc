@@ -315,8 +315,18 @@ export class ParentIPC extends IPCCommon {
             this.listener.once('error', reject);
         });
 
+        const exitPromise = new Promise<net.Socket>((_, reject) => {
+            if (this.cmdExitResult) {
+                reject(new Error(`command exited before connection established`));
+            } else {
+                this.cmdExitCallbacks.push(() => {
+                    reject(new Error(`command exited before connection established`));
+                });
+            }
+        });
+
         try {
-            this.conn = await timeout(acceptPromise, acceptTimeout);
+            this.conn = await timeout(Promise.race([acceptPromise, exitPromise]), acceptTimeout);
             this.readConn();
         } catch (e) {
             if (this.cmd) this.cmd.kill();

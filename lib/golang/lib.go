@@ -8,9 +8,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
-	"math/rand"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -268,6 +268,9 @@ func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
 	case result := <-call.resultChan:
 		return result.Get()
 	case <-ipc.ctx.Done():
+		ipc.mu.Lock()
+		delete(ipc.pendingCalls, id)
+		ipc.mu.Unlock()
 		return nil, ipc.ctx.Err()
 	}
 }
@@ -324,6 +327,8 @@ type ParentIPC struct {
 	*ipcCommon
 	cmd      *exec.Cmd
 	listener net.Listener
+	cmdDone  chan struct{}
+	cmdErr   error
 }
 
 func NewParent(cmd *exec.Cmd, localApis ...any) (*ParentIPC, error) {
@@ -351,6 +356,7 @@ func NewParentWithContext(ctx context.Context, cmd *exec.Cmd, localApis ...any) 
 	cmd.Args = append(cmd.Args, ipcSocketArg, p.socketPath)
 
 	p.errCh = make(chan error, 1)
+	p.cmdDone = make(chan struct{})
 
 	return &p, nil
 }
@@ -368,6 +374,11 @@ func (p *ParentIPC) Start() error {
 	if err != nil {
 		return fmt.Errorf("cmd start: %w", err)
 	}
+
+	go func() {
+		p.cmdErr = p.cmd.Wait()
+		close(p.cmdDone)
+	}()
 
 	return p.acceptConn()
 }
@@ -390,6 +401,8 @@ func (p *ParentIPC) acceptConn() error {
 	case <-time.After(acceptTimeout):
 		_ = p.cmd.Process.Kill()
 		return fmt.Errorf("accept timeout")
+	case <-p.cmdDone:
+		return fmt.Errorf("cmd exited before accepting connection: %w", p.cmdErr)
 	case res := <-res:
 		if res.IsError() {
 			_ = p.cmd.Process.Kill()
@@ -419,14 +432,8 @@ func (p *ParentIPC) Stop() error {
 }
 
 func (p *ParentIPC) Wait(timeout ...time.Duration) (retErr error) {
-	waitErrCh := make(chan error, 1)
-
 	const defaultTimeout = time.Duration(1<<63 - 1) // max duration in go
 	_timeout := variadicToOption(timeout).OrElse(defaultTimeout)
-
-	go func() {
-		waitErrCh <- p.cmd.Wait()
-	}()
 
 loop:
 	for {
@@ -434,7 +441,8 @@ loop:
 		case err := <-p.errCh:
 			retErr = mergeErr(retErr, fmt.Errorf("ipc internal error: %w", err))
 			break loop
-		case err := <-waitErrCh:
+		case <-p.cmdDone:
+			err := p.cmdErr
 			if err != nil {
 				var exitErr *exec.ExitError
 				if ok := errors.As(err, &exitErr); ok {
