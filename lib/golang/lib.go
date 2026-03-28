@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"math/rand"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -67,6 +68,7 @@ type ipcCommon struct {
 	processingCalls atomic.Int64
 	stopRequested   atomic.Bool
 	mu              sync.Mutex
+	writeMu         sync.Mutex
 	ctx             context.Context
 }
 
@@ -91,7 +93,7 @@ func (ipc *ipcCommon) readConn() {
 func (ipc *ipcCommon) processMsg(msg Message) {
 	switch msg.Type {
 	case MsgCall:
-		ipc.handleCall(msg)
+		go ipc.handleCall(msg)
 	case MsgResponse:
 		ipc.handleResponse(msg)
 	}
@@ -105,8 +107,11 @@ func (ipc *ipcCommon) sendMsg(msg Message) error {
 	}
 	data = append(data, '\n')
 
-	if _, err := ipc.conn.Write(data); err != nil {
-		return fmt.Errorf("write message: %w", err)
+	ipc.writeMu.Lock()
+	_, writeErr := ipc.conn.Write(data)
+	ipc.writeMu.Unlock()
+	if writeErr != nil {
+		return fmt.Errorf("write message: %w", writeErr)
 	}
 
 	return nil
@@ -275,11 +280,14 @@ func (ipc *ipcCommon) raiseErr(err error) {
 }
 
 func (ipc *ipcCommon) closeConn() {
-	ipc.mu.Lock()
-	defer ipc.mu.Unlock()
 	_ = ipc.conn.Close()
-	for _, call := range ipc.pendingCalls {
+	ipc.mu.Lock()
+	pending := ipc.pendingCalls
+	ipc.pendingCalls = make(map[int64]*pendingCall)
+	ipc.mu.Unlock()
+	for _, call := range pending {
 		call.resultChan <- mo.Err[Vals](fmt.Errorf("call cancelled due to ipc termination"))
+		close(call.resultChan)
 	}
 }
 
@@ -328,7 +336,7 @@ func NewParentWithContext(ctx context.Context, cmd *exec.Cmd, localApis ...any) 
 			localApis:    mapTypeNames(localApis),
 			pendingCalls: make(map[int64]*pendingCall),
 			errCh:        make(chan error, 1),
-			socketPath:   filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d.sock", os.Getpid())),
+			socketPath:   filepath.Join(os.TempDir(), fmt.Sprintf("kitten-ipc-%d-%d.sock", os.Getpid(), rand.Int63())),
 			ctx:          ctx,
 		},
 		cmd: cmd,
@@ -394,7 +402,10 @@ func (p *ParentIPC) acceptConn() error {
 }
 
 func (p *ParentIPC) Stop() error {
-	if len(p.pendingCalls) > 0 {
+	p.mu.Lock()
+	hasPending := len(p.pendingCalls) > 0
+	p.mu.Unlock()
+	if hasPending {
 		return fmt.Errorf("there are calls pending")
 	}
 	if p.processingCalls.Load() > 0 {
@@ -482,7 +493,7 @@ func (c *ChildIPC) Start() error {
 		return fmt.Errorf("connect to parent socket: %w", err)
 	}
 	c.conn = conn
-	c.readConn()
+	go c.readConn()
 	return nil
 }
 
