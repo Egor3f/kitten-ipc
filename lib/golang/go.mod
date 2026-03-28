@@ -1,4 +1,4 @@
-module efprojects.com/kitten-ipc
+module efprojects.com/kitten-ipc/lib/golang
 
 go 1.25.1
 
