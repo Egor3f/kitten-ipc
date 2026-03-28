@@ -8,31 +8,39 @@ import (
 	"fmt"
 )
 
+var _ = base64.StdEncoding
+
 type TsIpcApi struct {
 	Ipc kittenipc.IpcCommon
 }
 
-func (self *TsIpcApi) Div(
+func (t *TsIpcApi) Div(
 	a int, b int,
 ) (
 	int, error,
 ) {
-	results, err := self.Ipc.Call("TsIpcApi.Div", a, b)
+	results, err := t.Ipc.Call("TsIpcApi.Div", a, b)
 	if err != nil {
 		return 0, fmt.Errorf("call to TsIpcApi.Div failed: %w", err)
+	}
+	if len(results) < 1 {
+		return 0, fmt.Errorf("call to TsIpcApi.Div: expected 1 results, got %d", len(results))
 	}
 
 	return int(results[0].(float64)), nil
 }
 
-func (self *TsIpcApi) XorData(
+func (t *TsIpcApi) XorData(
 	data1 []byte, data2 []byte,
 ) (
 	[]byte, error,
 ) {
-	results, err := self.Ipc.Call("TsIpcApi.XorData", data1, data2)
+	results, err := t.Ipc.Call("TsIpcApi.XorData", data1, data2)
 	if err != nil {
 		return []byte{}, fmt.Errorf("call to TsIpcApi.XorData failed: %w", err)
+	}
+	if len(results) < 1 {
+		return []byte{}, fmt.Errorf("call to TsIpcApi.XorData: expected 1 results, got %d", len(results))
 	}
 
 	results[0], err = base64.StdEncoding.DecodeString(results[0].(string))
