@@ -4,10 +4,14 @@ export class AsyncQueue<T> {
 
     put(val: T) {
         this.store.push(val);
-        for(const collector of this.collectors) {
-            collector(this.store);
+        if (this.collectors.length > 0) {
+            const snapshot = [...this.store];
+            this.store = [];
+            for (const collector of this.collectors) {
+                collector(snapshot);
+            }
+            this.collectors = [];
         }
-        this.collectors = [];
     }
 
     async collect(): Promise<T[]> {

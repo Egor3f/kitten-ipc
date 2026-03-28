@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as util from 'node:util';
+import * as crypto from 'node:crypto';
 import {AsyncQueue} from './asyncqueue.js';
 
 const IPC_SOCKET_ARG = 'ipc-socket';
@@ -258,9 +259,11 @@ export class ParentIPC extends IPCCommon {
     private readonly cmdArgs: string[];
     private cmd: ChildProcess | null = null;
     private readonly listener: net.Server;
+    private cmdExitResult: { code: number | null, signal: string | null } | null = null;
+    private cmdExitCallbacks: ((result: { code: number | null, signal: string | null }) => void)[] = [];
 
     constructor(cmdPath: string, cmdArgs: string[], ...localApis: object[]) {
-        const socketPath = path.join(os.tmpdir(), `kitten-ipc-${ process.pid }.sock`);
+        const socketPath = path.join(os.tmpdir(), `kitten-ipc-${ process.pid }-${ crypto.randomInt(2**48) }.sock`);
         super(localApis, socketPath);
 
         this.cmdPath = cmdPath;
@@ -292,7 +295,14 @@ export class ParentIPC extends IPCCommon {
             this.raiseErr(err);
         });
 
-        this.acceptConn().catch();
+        this.cmd.on('close', (code, signal) => {
+            const result = { code, signal };
+            this.cmdExitResult = result;
+            for (const cb of this.cmdExitCallbacks) cb(result);
+            this.cmdExitCallbacks = [];
+        });
+
+        this.acceptConn().catch((e) => this.raiseErr(e as Error));
     }
 
     private async acceptConn(): Promise<void> {
@@ -315,28 +325,35 @@ export class ParentIPC extends IPCCommon {
     }
 
     async wait(): Promise<void> {
-        return new Promise(async (resolve, reject) => {
-            if (!this.cmd) {
-                reject('Command is not started yet');
-                return;
-            }
-            this.cmd.addListener('close', (code, signal) => {
-                if (signal || code) {
-                    if (signal) reject(new Error(`Process exited with signal ${ signal }`));
-                    else reject(new Error(`Process exited with code ${ code }`));
-                } else if(!this.ready) {
-                    reject('command exited before connection established');
-                } else {
-                    resolve();
-                }
-            });
-            const errors = await this.errorQueue.collect();
-            if(errors.length === 1) {
-                reject(errors[0]);
-            } else if(errors.length > 1) {
-                reject(new Error(errors.map(Error.toString).join(', ')));
+        if (!this.cmd) {
+            throw new Error('Command is not started yet');
+        }
+
+        const exitPromise = new Promise<{ code: number | null, signal: string | null }>((resolve) => {
+            if (this.cmdExitResult) {
+                resolve(this.cmdExitResult);
+            } else {
+                this.cmdExitCallbacks.push(resolve);
             }
         });
+
+        const result = await Promise.race([
+            exitPromise.then(({ code, signal }) => {
+                if (signal || code) {
+                    if (signal) throw new Error(`Process exited with signal ${ signal }`);
+                    else throw new Error(`Process exited with code ${ code }`);
+                } else if (!this.ready) {
+                    throw new Error('command exited before connection established');
+                }
+            }),
+            this.errorQueue.collect().then((errors) => {
+                if (errors.length === 1) {
+                    throw errors[0];
+                } else if (errors.length > 1) {
+                    throw new Error(errors.map(e => e.toString()).join(', '));
+                }
+            }),
+        ]);
     }
 }
 
@@ -362,7 +379,7 @@ export class ChildIPC extends IPCCommon {
             if(errors.length === 1) {
                 reject(errors[0]);
             } else if(errors.length > 1) {
-                reject(new Error(errors.map(Error.toString).join(', ')));
+                reject(new Error(errors.map(e => e.toString()).join(', ')));
             }
             this.onClose = () => {
                 if (this.processingCalls === 0) {
