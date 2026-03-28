@@ -111,7 +111,7 @@ func (p *ParentIPC) Stop() error {
 	if hasPending {
 		return fmt.Errorf("there are calls pending")
 	}
-	if p.processingCalls.Load() > 0 {
+	if p.processingIncomingCalls.Load() > 0 {
 		return fmt.Errorf("there are calls processing")
 	}
 	p.stopRequested.Store(true)

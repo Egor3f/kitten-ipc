@@ -27,17 +27,17 @@ type pendingCall struct {
 }
 
 type ipcCommon struct {
-	localApis       map[string]any
-	socketPath      string
-	conn            net.Conn
-	errCh           chan error
-	nextId          int64
-	pendingCalls    map[int64]*pendingCall
-	processingCalls atomic.Int64
-	stopRequested   atomic.Bool
-	mu              sync.Mutex
-	writeMu         sync.Mutex
-	ctx             context.Context
+	localApis               map[string]any
+	socketPath              string
+	conn                    net.Conn
+	errCh                   chan error
+	nextId                  int64
+	pendingCalls            map[int64]*pendingCall
+	processingIncomingCalls atomic.Int64
+	stopRequested           atomic.Bool
+	mu                      sync.Mutex
+	writeMu                 sync.Mutex
+	ctx                     context.Context
 }
 
 func (ipc *ipcCommon) readConn() {
@@ -50,17 +50,17 @@ func (ipc *ipcCommon) readConn() {
 			ipc.raiseErr(fmt.Errorf("unmarshal message: %w", err))
 			break
 		}
-		ipc.processMsg(msg)
+		ipc.handleIncomingMsg(msg)
 	}
 	if err := scn.Err(); err != nil {
 		ipc.raiseErr(err)
 	}
 }
 
-func (ipc *ipcCommon) processMsg(msg Message) {
+func (ipc *ipcCommon) handleIncomingMsg(msg Message) {
 	switch msg.Type {
 	case MsgCall:
-		go ipc.handleCall(msg)
+		go ipc.handleIncomingCall(msg)
 	case MsgResponse:
 		ipc.handleResponse(msg)
 	}
@@ -83,13 +83,13 @@ func (ipc *ipcCommon) sendMsg(msg Message) error {
 	return nil
 }
 
-func (ipc *ipcCommon) handleCall(msg Message) {
+func (ipc *ipcCommon) handleIncomingCall(msg Message) {
 	if ipc.stopRequested.Load() {
 		return
 	}
 
-	ipc.processingCalls.Add(1)
-	defer ipc.processingCalls.Add(-1)
+	ipc.processingIncomingCalls.Add(1)
+	defer ipc.processingIncomingCalls.Add(-1)
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -126,12 +126,12 @@ func (ipc *ipcCommon) handleCall(msg Message) {
 		results = append(results, resVal.Interface())
 	}
 
-	var resErr error
+	var resultError error
 	if !errResultVals.IsNil() {
-		resErr = errResultVals.Interface().(error)
+		resultError = errResultVals.Interface().(error)
 	}
 
-	ipc.sendResponse(msg.Id, results, resErr)
+	ipc.sendResponse(msg.Id, results, resultError)
 }
 
 func (ipc *ipcCommon) findMethod(methodName string) (reflect.Value, error) {
