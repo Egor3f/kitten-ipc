@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	kittenipc "github.com/egor3f/kitten-ipc"
+	kittenipc "github.com/egor3f/kitten-ipc/lib/golang"
 )
 
 // kittenipc:api

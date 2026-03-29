@@ -113,20 +113,22 @@ func (p *GoApiParser) parseFile(sourceFile string) ([]api.Endpoint, error) {
 
 					apiMethod.Params = append(apiMethod.Params, *apiPar)
 				}
-				for i, ret := range funcDecl.Type.Results.List {
-					apiRet, err := fieldToVal(ret, true)
-					if err != nil {
-						return nil, fmt.Errorf("parse return value %d for method %s: %w", i, apiMethod.Name, err)
-					}
-					if apiRet == nil {
-						continue
-					}
+				if funcDecl.Type.Results != nil {
+					for i, ret := range funcDecl.Type.Results.List {
+						apiRet, err := fieldToVal(ret, true)
+						if err != nil {
+							return nil, fmt.Errorf("parse return value %d for method %s: %w", i, apiMethod.Name, err)
+						}
+						if apiRet == nil {
+							continue
+						}
 
-					if len(ret.Names) > 0 {
-						apiRet.Name = ret.Names[0].Name
-					}
+						if len(ret.Names) > 0 {
+							apiRet.Name = ret.Names[0].Name
+						}
 
-					apiMethod.Ret = append(apiMethod.Ret, *apiRet)
+						apiMethod.Ret = append(apiMethod.Ret, *apiRet)
+					}
 				}
 				endpoints[i].Methods = append(endpoints[i].Methods, apiMethod)
 			}

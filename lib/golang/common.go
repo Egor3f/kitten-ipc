@@ -129,9 +129,19 @@ func (ipc *ipcCommon) handleIncomingCall(msg Message) {
 		args = append(args, reflect.ValueOf(arg))
 	}
 
+	var errorType = reflect.TypeOf((*error)(nil)).Elem()
+
 	allResultVals := method.Call(args)
-	retResultVals := allResultVals[0 : len(allResultVals)-1]
-	errResultVals := allResultVals[len(allResultVals)-1]
+	var retResultVals []reflect.Value
+	var errResultVal reflect.Value
+	if len(allResultVals) > 0 {
+		if allResultVals[len(allResultVals)-1].Type().Implements(errorType) {
+			retResultVals = allResultVals[0 : len(allResultVals)-1]
+			errResultVal = allResultVals[len(allResultVals)-1]
+		} else {
+			retResultVals = allResultVals
+		}
+	}
 
 	var results []any
 	for _, resVal := range retResultVals {
@@ -139,8 +149,8 @@ func (ipc *ipcCommon) handleIncomingCall(msg Message) {
 	}
 
 	var resultError error
-	if !errResultVals.IsNil() {
-		resultError = errResultVals.Interface().(error)
+	if errResultVal.IsValid() && !errResultVal.IsNil() {
+		resultError = errResultVal.Interface().(error)
 	}
 
 	ipc.sendResponse(msg.Id, results, resultError)

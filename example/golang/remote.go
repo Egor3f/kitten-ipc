@@ -5,7 +5,8 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	kittenipc "github.com/egor3f/kitten-ipc"
+
+	kittenipc "github.com/egor3f/kitten-ipc/lib/golang"
 )
 
 var _ = base64.StdEncoding
