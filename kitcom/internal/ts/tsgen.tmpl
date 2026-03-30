@@ -5,7 +5,7 @@
 import {ParentIPC, ChildIPC} from 'kitten-ipc';
 
 {{ range $e := .Api.Endpoints }}
-export default class {{ $e.Name }} {
+export class {{ $e.Name }} {
     protected ipc: ParentIPC | ChildIPC;
 
     constructor(ipc: ParentIPC | ChildIPC) {
