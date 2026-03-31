@@ -171,6 +171,9 @@ export abstract class IPCCommon {
     }
 
     public serialize(arg: any): any {
+        if (arg === null || arg === undefined) {
+            return null;
+        }
         switch (typeof arg) {
             case 'string':
             case 'boolean':
@@ -188,6 +191,9 @@ export abstract class IPCCommon {
     }
 
     public deserialize(arg: any): any {
+        if (arg === null || arg === undefined) {
+            return null;
+        }
         switch (typeof arg) {
             case 'string':
             case 'boolean':
