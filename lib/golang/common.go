@@ -234,6 +234,10 @@ func (ipc *ipcCommon) Call(method string, params ...any) (Vals, error) {
 	ipc.pendingCalls[id] = call
 	ipc.mu.Unlock()
 
+	if params == nil {
+		params = make([]any, 0)
+	}
+
 	for i := range params {
 		params[i] = ipc.serialize(params[i])
 	}
