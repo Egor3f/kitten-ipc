@@ -1,9 +1,9 @@
 module github.com/egor3f/kitten-ipc/kitcom
 
-go 1.25.1
+go 1.26
 
 require (
-	github.com/go-json-experiment/json v0.0.0-20251027170946-4849db3c2f7e
+	github.com/go-json-experiment/json v0.0.0-20260820222146-c27c302e5fc3
 	golang.org/x/sync v0.17.0
 	golang.org/x/text v0.30.0
 )
