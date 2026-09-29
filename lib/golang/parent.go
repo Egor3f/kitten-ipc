@@ -43,7 +43,13 @@ func NewParentWithContext(ctx context.Context, cmd *exec.Cmd, opts *Options, loc
 	}
 
 	cmd.Stdout = os.Stdout
+	if opts.Stdout != nil {
+		cmd.Stdout = opts.Stdout
+	}
 	cmd.Stderr = os.Stderr
+	if opts.Stderr != nil {
+		cmd.Stderr = opts.Stderr
+	}
 
 	if slices.Contains(cmd.Args, ipcSocketArg) {
 		return nil, fmt.Errorf("you should not use `%s` argument in your command", ipcSocketArg)

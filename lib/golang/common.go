@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"reflect"
@@ -29,6 +30,8 @@ type pendingCall struct {
 
 type Options struct {
 	DebugMessages bool
+	Stdout        io.Writer
+	Stderr        io.Writer
 }
 
 type ipcCommon struct {
