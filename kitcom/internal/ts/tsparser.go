@@ -83,9 +83,9 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 				apiMethod.Params = append(apiMethod.Params, apiPar)
 			}
 
-			if method.Type != nil {
+			if retType := unwrapPromise(method.Type); retType != nil && retType.Kind != ast.KindVoidKeyword {
 				var apiRet api.Val
-				t, typeErr := p.fieldToVal(method.Type)
+				t, typeErr := p.fieldToVal(retType)
 				if typeErr != nil {
 					err = fmt.Errorf("failed to parse return type: %w", typeErr)
 					return false
@@ -106,6 +106,20 @@ func (p *TypescriptApiParser) parseFile(sourceFilePath string) ([]api.Endpoint, 
 	}
 
 	return endpoints, nil
+}
+
+func unwrapPromise(typ *ast.TypeNode) *ast.TypeNode {
+	if typ == nil || typ.Kind != ast.KindTypeReference {
+		return typ
+	}
+	ref := typ.AsTypeReferenceNode()
+	if ref.TypeName.Kind != ast.KindIdentifier || ref.TypeName.AsIdentifier().Text != "Promise" {
+		return typ
+	}
+	if ref.TypeArguments == nil || len(ref.TypeArguments.Nodes) != 1 {
+		return typ
+	}
+	return ref.TypeArguments.Nodes[0]
 }
 
 func (p *TypescriptApiParser) fieldToVal(typ *ast.TypeNode) (api.ValType, error) {
